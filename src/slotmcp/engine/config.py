@@ -614,6 +614,55 @@ class MysterySymbolConfig:
 
 
 @dataclass
+class WalkingWildConfig:
+    """行走 Wild（Walking Wild）：Wild 落下后每局向左移动一列，移出网格即消失。
+
+    这是首个**跨局状态**算子：落点保存在 `GameState.walking_wilds`，
+    下一局先整体左移再写入网格（不消耗随机数，完全确定性）。
+
+    * `symbol`：会行走的 Wild（必须是 Wild 类型，且自身也应能正常替代/赔付）
+    * `steps_per_spin`：每局移动几列（默认 1）
+    * `direction`：`left` / `right`（当前只实现左移，其它值会在校验阶段被拦截）
+    * `phases`：生效阶段（通常只在 `free_spins`，基础 game 每局重置就没有「行走」的意义）
+    * `max_walkers`：屏上同时存在的行走 Wild 上限
+    * `protected_symbols`：不允许被覆盖的符号；撞上则行走 Wild 消失（如 Scatter）
+    """
+
+    enabled: bool = False
+    symbol: str = ""
+    steps_per_spin: int = 1
+    direction: str = "left"
+    phases: List[str] = field(default_factory=lambda: ["free_spins"])
+    max_walkers: int = 8
+    protected_symbols: List[str] = field(default_factory=lambda: ["scatter"])
+
+    DIRECTIONS = ("left", "right")
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "enabled": self.enabled,
+            "symbol": self.symbol,
+            "steps_per_spin": int(self.steps_per_spin),
+            "direction": self.direction,
+            "phases": list(self.phases),
+            "max_walkers": int(self.max_walkers),
+            "protected_symbols": list(self.protected_symbols),
+        }
+
+    @staticmethod
+    def from_dict(d: Dict[str, Any]) -> "WalkingWildConfig":
+        return WalkingWildConfig(
+            enabled=bool(d.get("enabled", False)),
+            symbol=d.get("symbol", ""),
+            steps_per_spin=int(d.get("steps_per_spin", 1)),
+            direction=d.get("direction", "left"),
+            phases=list(d.get("phases") or ["free_spins"]),
+            max_walkers=int(d.get("max_walkers", 8)),
+            protected_symbols=list(d.get("protected_symbols") or ["scatter"]),
+        )
+
+
+@dataclass
 class GambleConfig:
     enabled: bool = False
     max_steps: int = 5
@@ -653,6 +702,7 @@ class Features:
     pick_bonus: Optional[PickBonusConfig] = None
     colossal: Optional[ColossalSymbolConfig] = None
     mystery: Optional[MysterySymbolConfig] = None
+    walking_wild: Optional[WalkingWildConfig] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -667,6 +717,7 @@ class Features:
             "pick_bonus": self.pick_bonus.to_dict() if self.pick_bonus else None,
             "colossal": self.colossal.to_dict() if self.colossal else None,
             "mystery": self.mystery.to_dict() if self.mystery else None,
+            "walking_wild": self.walking_wild.to_dict() if self.walking_wild else None,
         }
 
     @staticmethod
@@ -687,6 +738,7 @@ class Features:
             pick_bonus=PickBonusConfig.from_dict(d["pick_bonus"]) if d.get("pick_bonus") else None,
             colossal=ColossalSymbolConfig.from_dict(d["colossal"]) if d.get("colossal") else None,
             mystery=MysterySymbolConfig.from_dict(d["mystery"]) if d.get("mystery") else None,
+            walking_wild=WalkingWildConfig.from_dict(d["walking_wild"]) if d.get("walking_wild") else None,
         )
 
 
@@ -1092,6 +1144,26 @@ class GameConfig:
             for phase in ms.phases or []:
                 if phase not in ("base", "free_spins", "hold_win"):
                     errors.append(f"mystery.phases 非法: {phase}")
+
+        ww = self.features.walking_wild
+        if ww and ww.enabled:
+            sym = self.symbols.get(ww.symbol)
+            if sym is None:
+                errors.append(f"walking_wild.symbol 未定义: {ww.symbol}")
+            elif sym.kind is not SymbolKind.WILD:
+                errors.append(f"walking_wild.symbol 必须是 Wild: {ww.symbol}")
+            if ww.steps_per_spin < 1:
+                errors.append("walking_wild.steps_per_spin 至少为 1")
+            if ww.direction not in WalkingWildConfig.DIRECTIONS:
+                errors.append(f"walking_wild.direction 非法: {ww.direction}")
+            if ww.max_walkers < 1:
+                errors.append("walking_wild.max_walkers 至少为 1")
+            for phase in ww.phases or []:
+                if phase not in ("base", "free_spins", "hold_win"):
+                    errors.append(f"walking_wild.phases 非法: {phase}")
+            # 基础 game 每局都会重置状态，此时「行走」没有意义（等价于普通 Wild）
+            if "base" in (ww.phases or []) and "free_spins" not in (ww.phases or []):
+                errors.append("walking_wild 只在 base 生效没有意义（状态每局重置），请包含 free_spins")
 
         ew = self.features.expanding_wild
         if ew:

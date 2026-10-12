@@ -196,6 +196,47 @@
     };
   }
 
+  // 行走 Wild（跨局状态）：与 Python 端 walk_wilds 同构，不消耗随机数
+  function walkWilds(grid, ww, walkers, phase) {
+    if (!ww || !ww.enabled) return { walkers: [], event: null };
+    var phases = ww.phases || ['free_spins'];
+    if (phases.indexOf(phase) < 0) return { walkers: [], event: null };
+
+    var protectedSet = {};
+    (ww.protected_symbols || []).forEach(function (s) {
+      protectedSet[s] = true;
+    });
+    var step = parseInt(ww.steps_per_spin || 1, 10);
+    if (ww.direction === 'right') step = -step;
+
+    var moved = [];
+    (walkers || []).forEach(function (pos) {
+      var reel = parseInt(pos[0], 10) - step;
+      var row = parseInt(pos[1], 10);
+      if (reel < 0 || reel >= grid.length) return; // 移出网格 -> 消失
+      if (!grid[reel] || row < 0 || row >= grid[reel].length) return;
+      if (protectedSet[grid[reel][row]]) return; // 撞到受保护符号 -> 消失
+      moved.push([reel, row]);
+    });
+    moved.forEach(function (p) {
+      grid[p[0]][p[1]] = ww.symbol;
+    });
+
+    var current = [];
+    for (var r = 0; r < grid.length; r++) {
+      for (var c = 0; c < grid[r].length; c++) {
+        if (grid[r][c] === ww.symbol) current.push([r, c]);
+      }
+    }
+    if (ww.max_walkers && current.length > ww.max_walkers) current = current.slice(0, ww.max_walkers);
+
+    var event = null;
+    if (moved.length || current.length) {
+      event = { type: 'walking_wild', symbol: ww.symbol, moved: moved, positions: current, count: current.length };
+    }
+    return { walkers: current, event: event };
+  }
+
   // 神秘符号揭示：与 Python 端 reveal_mystery_symbols 同构
   // reveal_all_same=true 时全屏揭示为同一符号（只消耗 1 个随机数）；
   // 否则按「轴优先、行次之」的扫描顺序逐格独立揭示。
@@ -628,6 +669,7 @@
     this.fsMultiplier = 1.0;
     this.cascadeMultiplier = 1.0;
     this.stickyKeys = {};
+    this.walkingWilds = []; // 行走 Wild 落点 [[reel,row], ...]（跨局状态）
     this.respinsLeft = 0;
     this.holdGrid = null;
     this.holdLockedKeys = [];
@@ -762,6 +804,19 @@
     if (ms && ms.enabled) {
       var revealed = revealMysterySymbols(grid, ms, this.rng, st.phase);
       if (revealed) stepEvents.push(revealed);
+    }
+
+    // 行走 Wild：先移动已有的（写回网格），再登记本局新落下的（下一局开始走）
+    var wwc = cfg.features.walking_wild;
+    if (wwc && wwc.enabled) {
+      var wwPhases = wwc.phases || ['free_spins'];
+      if (wwPhases.indexOf(st.phase) >= 0) {
+        var res = walkWilds(grid, wwc, st.walkingWilds, st.phase);
+        st.walkingWilds = res.walkers;
+        if (res.event) stepEvents.push(res.event);
+      } else {
+        st.walkingWilds = [];
+      }
     }
 
     // 随机 Wild 投放：顺序与 Python 一致（替代计算前、触发判定前）
@@ -962,6 +1017,7 @@
         st.freeSpinsTotal += granted;
         st.purchaseFreeSpins += granted;
         st.stickyKeys = {};
+        st.walkingWilds = [];
         events.push({ type: 'free_spins_trigger', symbol: fs.trigger_symbol, count: bestCount, spins: granted });
         return;
       }
@@ -1006,6 +1062,7 @@
   SlotMachine.prototype._leaveFreeSpins = function (st, events) {
     st.phase = PHASE_BASE;
     st.stickyKeys = {};
+    st.walkingWilds = [];
     st.fsMultiplier = 1.0;
     st.cascadeMultiplier = 1.0;
     events.push({ type: 'free_spins_end', played: st.freeSpinsPlayed, remaining: 0 });

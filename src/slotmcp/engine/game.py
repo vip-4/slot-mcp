@@ -25,6 +25,7 @@ from .features import (
     place_random_wilds,
     resolve_pick_bonus,
     reveal_mystery_symbols,
+    walk_wilds,
 )
 from .reels import Grid, ReelStripSet
 from .rng import SlotRNG
@@ -69,6 +70,7 @@ class GameState:
     fs_multiplier: float = 1.0
     cascade_multiplier: float = 1.0
     sticky_keys: Dict[str, str] = field(default_factory=dict)  # "reel,row" -> symbol_id
+    walking_wilds: List[List[int]] = field(default_factory=list)  # 行走 Wild 落点 [[reel,row], ...]
     respins_left: int = 0
     hold_grid: Optional[Grid] = None
     hold_locked_keys: List[str] = field(default_factory=list)
@@ -88,6 +90,7 @@ class GameState:
             "fs_multiplier": self.fs_multiplier,
             "cascade_multiplier": self.cascade_multiplier,
             "sticky_keys": dict(self.sticky_keys),
+            "walking_wilds": [list(p) for p in self.walking_wilds],
             "respins_left": self.respins_left,
             "hold_grid": copy.deepcopy(self.hold_grid),
             "hold_locked_keys": list(self.hold_locked_keys),
@@ -109,6 +112,7 @@ class GameState:
             fs_multiplier=float(d.get("fs_multiplier", 1.0)),
             cascade_multiplier=float(d.get("cascade_multiplier", 1.0)),
             sticky_keys=dict(d.get("sticky_keys", {})),
+            walking_wilds=[list(p) for p in d.get("walking_wilds", [])],
             respins_left=int(d.get("respins_left", 0)),
             hold_grid=copy.deepcopy(d.get("hold_grid")),
             hold_locked_keys=list(d.get("hold_locked_keys", [])),
@@ -357,6 +361,15 @@ class SlotMachine:
             revealed = reveal_mystery_symbols(grid, ms, self.rng, st.phase)
             if revealed:
                 step_events.append(revealed)
+
+        # 行走 Wild：先移动已有的（写回网格），再登记本局新落下的（下一局开始走）
+        wwc = cfg.features.walking_wild
+        if wwc and wwc.enabled and st.phase in (wwc.phases or [PHASE_FREE]):
+            st.walking_wilds, walked = walk_wilds(grid, wwc, st.walking_wilds, st.phase)
+            if walked:
+                step_events.append(walked)
+        elif wwc and wwc.enabled:
+            st.walking_wilds = []
 
         # 随机 Wild 投放：必须在「替代计算之前、触发判定之前」完成，
         # 这样它既能参与线赔，也能影响 Scatter/币值的可见性（但不会覆盖受保护符号）。
@@ -640,6 +653,7 @@ class SlotMachine:
                 st.free_spins_total += granted
                 st.purchase_free_spins += granted
                 st.sticky_keys = {}
+                st.walking_wilds = []
                 events.append(
                     {
                         "type": "free_spins_trigger",
@@ -689,6 +703,7 @@ class SlotMachine:
     def _leave_free_spins(self, st: GameState, events: List[Dict[str, Any]]) -> None:
         st.phase = PHASE_BASE
         st.sticky_keys = {}
+        st.walking_wilds = []
         st.fs_multiplier = 1.0
         st.cascade_multiplier = 1.0
         events.append(

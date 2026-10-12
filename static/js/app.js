@@ -338,6 +338,10 @@
         else if (e.type === 'colossal') {
           const cs = cfg.symbols[e.symbol] || { name: e.symbol };
           say(`巨符号降临：${e.size}×${e.size} 的${cs.name}落在第 ${e.reel + 1} 轴`);
+        } else if (e.type === 'walking_wild') {
+          const ww = cfg.symbols[e.symbol] || { name: e.symbol };
+          const cols = e.positions.map((p) => p[0] + 1);
+          say(`${ww.name}向左行走：占据第 ${[...new Set(cols)].join('/')} 轴（共 ${e.count} 个）`);
         } else if (e.type === 'mystery_reveal') {
           const mr = cfg.symbols[e.symbol] || { name: e.symbol };
           say(`凤凰蛋孵化：${e.count} 枚揭示为${mr.name}`);

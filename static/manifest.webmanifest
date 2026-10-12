@@ -1,7 +1,7 @@
 {
   "name": "Blender SLOT 游戏合集",
   "short_name": "SLOT 合集",
-  "description": "6 款免费在线老虎机（幸运水果、糖果狂欢、龙宫探宝、法老之墓、星际远征、锦鲤纳福）共用一套 CONFIG 引擎：固定线与 243/4096 Ways 两种赔付体系，含免费旋转、Hold & Win、级联连击、扩展 Wild、随机 Wild 投放、Cash Collect 金币收集与红黑翻倍。纯静态网页，免下载免注册，移动端可玩。",
+  "description": "10 款免费在线老虎机（幸运水果、糖果狂欢、龙宫探宝、法老之墓、星际远征、锦鲤纳福、雷霆神殿、巨神遗迹、凤凰涅槃、冰原狼踪）共用一套 CONFIG 引擎：固定线与 243/4096 Ways 两种赔付体系，含免费旋转、Hold & Win、级联连击、扩展 Wild、随机 Wild 投放、Cash Collect 金币收集、倍率 Wild、Pick'em 选宝、巨符号、神秘符号揭示、行走 Wild 与红黑翻倍。纯静态网页，免下载免注册，移动端可玩。",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",

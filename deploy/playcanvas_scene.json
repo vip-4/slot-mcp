@@ -98,7 +98,8 @@
         "multiplier_wild",
         "mystery",
         "pick_bonus",
-        "random_wild"
+        "random_wild",
+        "walking_wild"
       ]
     },
     {
@@ -191,7 +192,8 @@
         "multiplier_wild",
         "mystery",
         "pick_bonus",
-        "random_wild"
+        "random_wild",
+        "walking_wild"
       ]
     },
     {
@@ -275,7 +277,8 @@
         "multiplier_wild",
         "mystery",
         "pick_bonus",
-        "random_wild"
+        "random_wild",
+        "walking_wild"
       ]
     },
     {
@@ -396,7 +399,102 @@
         "multiplier_wild",
         "mystery",
         "pick_bonus",
-        "random_wild"
+        "random_wild",
+        "walking_wild"
+      ]
+    },
+    {
+      "id": "frost_wolf",
+      "name": "冰原狼踪",
+      "reels": 5,
+      "rows": 4,
+      "pay_mode": "lines",
+      "theme": {
+        "id": "frost",
+        "name": "冰原狼踪",
+        "palette": {
+          "grid": "#0f2531",
+          "reel": "#16303f",
+          "win": "#7cf6c8",
+          "wild": "#a8e8ff",
+          "bonus": "#8ad7ff"
+        },
+        "cabinet_color": "#123243",
+        "background": "#08161f",
+        "accent": "#8ad7ff",
+        "music": ""
+      },
+      "symbols": [
+        {
+          "id": "axe",
+          "name": "战斧",
+          "kind": "standard",
+          "color": "#9fb4c7",
+          "glyph": "🪓"
+        },
+        {
+          "id": "shield",
+          "name": "盾牌",
+          "kind": "standard",
+          "color": "#8ad7ff",
+          "glyph": "🛡️"
+        },
+        {
+          "id": "horn",
+          "name": "号角",
+          "kind": "standard",
+          "color": "#c9a227",
+          "glyph": "📯"
+        },
+        {
+          "id": "ship",
+          "name": "长船",
+          "kind": "standard",
+          "color": "#b08968",
+          "glyph": "⛵"
+        },
+        {
+          "id": "rune",
+          "name": "卢恩石",
+          "kind": "standard",
+          "color": "#c6a4ff",
+          "glyph": "🔯"
+        },
+        {
+          "id": "flake",
+          "name": "雪晶",
+          "kind": "standard",
+          "color": "#e8f4ff",
+          "glyph": "❄️"
+        },
+        {
+          "id": "wolf",
+          "name": "冰狼 Wild（行走）",
+          "kind": "wild",
+          "color": "#a8e8ff",
+          "glyph": "🐺"
+        },
+        {
+          "id": "scatter",
+          "name": "极光 Scatter",
+          "kind": "scatter",
+          "color": "#7cf6c8",
+          "glyph": "🌌"
+        }
+      ],
+      "features": [
+        "cascade",
+        "collect",
+        "colossal",
+        "expanding_wild",
+        "free_spins",
+        "gamble",
+        "hold_win",
+        "multiplier_wild",
+        "mystery",
+        "pick_bonus",
+        "random_wild",
+        "walking_wild"
       ]
     },
     {
@@ -480,7 +578,8 @@
         "multiplier_wild",
         "mystery",
         "pick_bonus",
-        "random_wild"
+        "random_wild",
+        "walking_wild"
       ]
     },
     {
@@ -585,7 +684,8 @@
         "multiplier_wild",
         "mystery",
         "pick_bonus",
-        "random_wild"
+        "random_wild",
+        "walking_wild"
       ]
     },
     {
@@ -685,7 +785,8 @@
         "multiplier_wild",
         "mystery",
         "pick_bonus",
-        "random_wild"
+        "random_wild",
+        "walking_wild"
       ]
     },
     {
@@ -776,7 +877,8 @@
         "multiplier_wild",
         "mystery",
         "pick_bonus",
-        "random_wild"
+        "random_wild",
+        "walking_wild"
       ]
     },
     {
@@ -883,7 +985,8 @@
         "multiplier_wild",
         "mystery",
         "pick_bonus",
-        "random_wild"
+        "random_wild",
+        "walking_wild"
       ]
     }
   ]

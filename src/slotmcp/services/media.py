@@ -75,6 +75,11 @@ THEME_QUERIES: Dict[str, Dict[str, str]] = {
         "pixabay": "phoenix fire flames",
         "alt": "凤凰涅槃机台主题图：浴火凤凰与烈焰",
     },
+    "frost_wolf": {
+        "pexels": "wolf snow winter forest",
+        "pixabay": "wolf snow winter",
+        "alt": "冰原狼踪机台主题图：雪原上的狼与极光",
+    },
 }
 
 HERO_SIZE = (960, 540)

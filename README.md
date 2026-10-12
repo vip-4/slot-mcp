@@ -1,6 +1,6 @@
 # Blender Slot MCP —— SLOT 游戏合集
 
-在现有 **Blender MCP** 框架中用同一套 **CONFIG 引擎** 驱动 **9 款热门 SLOT 机台**，
+在现有 **Blender MCP** 框架中用同一套 **CONFIG 引擎** 驱动 **10 款热门 SLOT 机台**，
 机台之间互不复制代码：差异全部落在配置里，引擎、MCP 工具、Blender 插件、Web 前端共用一套接口。
 
 ```
@@ -30,7 +30,7 @@ blender-slot-mcp/
 │   │   ├── game.py               #   状态机主循环 + 机台注册表（统一入口）
 │   │   ├── session.py            #   玩家钱包、下注档位、博彩
 │   │   └── simulator.py          #   RTP / 波动率蒙特卡洛仿真
-│   ├── games/                    # 9 款机台：唯一的差异来源
+│   ├── games/                    # 10 款机台：唯一的差异来源
 │   │   ├── lucky_fruits.py       #   3x3  ·  5 线    · 低波动 · 红黑博彩
 │   │   ├── candy_carnival.py     #   5x3  · 20 线   · 中波动 · 扩展 Wild + 重转
 │   │   ├── dragon_palace.py      #   5x4  · 50 线   · 高波动 · 免费旋转 + 粘性 Wild
@@ -39,7 +39,8 @@ blender-slot-mcp/
 │   │   ├── fortune_koi.py        #   5x3  · 20 线   · 中高波 · 随机 Wild + Cash Collect
 │   │   ├── thunder_temple.py     #   5x3  · 20 线   · 高波动 · 倍率 Wild + Pick'em 选宝
 │   │   ├── colossal_ruins.py     #   5x3  · 20 线   · 中高波 · 巨符号 2×2/3×3
-│   │   └── phoenix_rebirth.py    #   5x3  · 20 线   · 中高波 · 神秘符号揭示
+│   │   ├── phoenix_rebirth.py    #   5x3  · 20 线   · 中高波 · 神秘符号揭示
+│   │   └── frost_wolf.py         #   5x4  · 50 线   · 高波动 · 行走 Wild（跨局状态）
 │   ├── mcp/
 │   │   ├── server.py             #   stdio JSON-RPC 2.0 服务端
 │   │   ├── tools.py              #   15 个 MCP 工具 + 会话仓库
@@ -143,7 +144,7 @@ python -m slotmcp.ui.http_api --port 8787
 | `POST /api/simulate` | 触发一次 RTP 仿真 |
 | `POST /api/blender/build` `/api/blender/animate` | 转发给 Blender 插件 |
 
-## 5. 九款机台的实测量化（20 万局 / bet=1）
+## 5. 十款机台的实测量化（20 万局 / bet=1）
 
 | 机台 | 结构 | 核心机制 | RTP | 命中率 | 波动率 | 最大倍率 | 特性触发 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -156,6 +157,7 @@ python -m slotmcp.ui.http_api --port 8787
 | **thunder_temple** | 5x3 · 20 线 | **倍率 Wild（×2/×3 相加） + Pick'em 选雷石** + 免费旋转 | **96.99%** | 51.5% | 6.03 | 358.9x | 1/137 局 |
 | **colossal_ruins** | 5x3 · 20 线 | **巨符号 2×2 / 3×3** + 免费旋转 | **96.31%** | 49.0% | 3.56 | 165.5x | 1/74.7 局 |
 | **phoenix_rebirth** | 5x3 · 20 线 | **神秘符号揭示**（凤凰蛋 → 同一符号）+ 免费旋转 | **96.92%** | 51.3% | 4.03 | 186.8x | 1/91.4 局 |
+| **frost_wolf** | 5x4 · 50 线 | **行走 Wild**（每局左移一列，跨局状态）+ 免费旋转 | **96.44%** | 46.1% | 6.66 | 244.2x | 1/71.2 局 |
 
 目标 RTP 统一 96%，容差默认 ±2%（dragon_palace 因高波动设为 ±3%）。
 `fortune_koi` 的贡献拆分：线赔 ≈47% / 收集 ≈43% / Scatter 直付 ≈6%；

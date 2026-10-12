@@ -33,7 +33,7 @@ def check(condition: bool, message: str) -> None:
 def test_configuration() -> None:
     print("[engine] 配置与校验")
     ids = game_ids()
-    check(len(ids) == 9, f"内置 9 款机台: {', '.join(ids)}")
+    check(len(ids) == 10, f"内置 10 款机台: {', '.join(ids)}")
     check("fortune_koi" in ids, "新增机台 fortune_koi 已注册")
     for cfg in iter_game_configs():
         errors = cfg.validate()
@@ -678,6 +678,126 @@ def test_mystery_config_validation() -> None:
     check(any("mystery.phases 非法" in e for e in errors3), "非法阶段被拦截")
 
 
+def test_walking_wild() -> None:
+    print("[engine] 行走 Wild（跨局状态算子）")
+    from slotmcp.engine.config import WalkingWildConfig
+    from slotmcp.engine.features import walk_wilds
+    from slotmcp.engine.game import GameState, PHASE_BASE, PHASE_FREE
+
+    fw = get_registry().get("frost_wolf")
+    cfg = fw.config
+    ww = cfg.features.walking_wild
+    check(ww is not None and ww.enabled, "frost_wolf 启用行走 Wild")
+    check(cfg.symbols[ww.symbol].kind.value == "wild", "行走符号必须是 Wild")
+    check("free_spins" in ww.phases, "只在免费旋转阶段生效")
+
+    grid = [
+        ["axe", "axe", "axe", "axe"],
+        ["axe", "axe", "axe", "axe"],
+        ["wolf", "axe", "axe", "axe"],
+        ["axe", "axe", "axe", "axe"],
+        ["axe", "axe", "axe", "axe"],
+    ]
+    # 上一局登记在 (2,0)，本局左移一步 -> (1,0)
+    walkers, ev = walk_wilds(grid, ww, [[2, 0]], PHASE_FREE)
+    check(ev is not None and ev["moved"] == [[1, 0]], f"左移一步：{ev}")
+    check(grid[1][0] == "wolf", "移动后写入网格")
+    check([2, 0] in walkers, "本局屏上的 Wild 登记为下一局行走落点")
+
+    # 移出网格 -> 消失
+    g2 = [["axe"] * 4 for _ in range(5)]
+    walkers2, ev2 = walk_wilds(g2, ww, [[0, 1]], PHASE_FREE)
+    check(ev2 is None and walkers2 == [], "移出网格后消失且无事件")
+    check(all("wolf" not in col for col in g2), "网格中不再有行走 Wild")
+
+    # 撞到受保护符号（Scatter）-> 消失
+    g3 = [["axe"] * 4 for _ in range(5)]
+    g3[1][2] = "scatter"
+    walkers3, ev3 = walk_wilds(g3, ww, [[2, 2]], PHASE_FREE)
+    check(ev3 is None and walkers3 == [], "撞到受保护符号时消失")
+    check(g3[1][2] == "scatter", "受保护符号未被覆盖")
+
+    # 阶段不匹配 -> 不生效
+    g4 = [["axe"] * 4 for _ in range(5)]
+    walkers4, ev4 = walk_wilds(g4, ww, [[2, 0]], PHASE_BASE)
+    check(ev4 is None and walkers4 == [], "不在生效阶段时不处理")
+
+    # max_walkers 生效
+    g5 = [["wolf"] * 4 for _ in range(5)]
+    many = walk_wilds(g5, ww, [], PHASE_FREE)
+    check(many[0] is not None and len(many[0]) <= ww.max_walkers, f"上限生效：{len(many[0])} <= {ww.max_walkers}")
+
+    # 端到端：免费旋转里能连续多局看到行走 Wild，离开免费旋转后状态清空
+    fw.rng = SlotRNG("frost")
+    hits = 0
+    max_consecutive = 0
+    run = 0
+    st_after: Optional[GameState] = None
+    for _ in range(6000):
+        res = fw.spin(total_bet=1.0)
+        for step in res.steps:
+            walked = any(e.get("type") == "walking_wild" for e in step.events)
+            if walked:
+                hits += 1
+                run += 1
+                max_consecutive = max(max_consecutive, run)
+            elif step.phase == PHASE_FREE:
+                run = 0
+        st_after = res.state
+    check(hits > 0, f"端到端可触发行走 Wild（{hits} 次）")
+    check(max_consecutive >= 2, f"行走 Wild 可连续多局在场（最长 {max_consecutive} 局）")
+    check(st_after is not None and st_after.walking_wilds == [], "离开免费旋转后行走状态已清空")
+
+    # 参数可调：steps_per_spin 改成 2 后一次移动两列
+    from slotmcp.engine.config import set_parameter as _set
+
+    _set(cfg, "features.walking_wild.steps_per_spin", 2)
+    g6 = [["axe"] * 4 for _ in range(5)]
+    _, ev6 = walk_wilds(g6, cfg.features.walking_wild, [[3, 0]], PHASE_FREE)
+    _set(cfg, "features.walking_wild.steps_per_spin", 1)
+    check(ev6 is not None and ev6["moved"] == [[1, 0]], f"slot_set_parameter 可调整步长：{ev6}")
+
+
+def test_walking_wild_config_validation() -> None:
+    print("[engine] 行走 Wild 配置校验")
+    from slotmcp.engine.config import Features, GameConfig, WalkingWildConfig
+
+    base = dict(
+        id="bad_walk",
+        name="bad",
+        reels=5,
+        rows=3,
+        symbols={"plume": _sym("plume", "standard"), "wild": _sym("wild", "wild")},
+        reel_sets={"base": _reel_set(["plume", "wild"])},
+    )
+    bad = GameConfig(
+        features=Features(
+            walking_wild=WalkingWildConfig(
+                enabled=True,
+                symbol="plume",  # 不是 Wild
+                steps_per_spin=0,
+                direction="up",
+                max_walkers=0,
+                phases=["base"],  # 只在 base 无意义
+            )
+        ),
+        **base,
+    )
+    errors = bad.validate()
+    joined = " | ".join(errors)
+    check(any("必须是 Wild" in e for e in errors), f"非 Wild 被拦截：{joined[:200]}")
+    check(any("steps_per_spin" in e for e in errors), "步长非正被拦截")
+    check(any("direction 非法" in e for e in errors), "非法方向被拦截")
+    check(any("max_walkers" in e for e in errors), "上限非正被拦截")
+    check(any("只在 base 生效没有意义" in e for e in errors), "只在 base 生效被拦截")
+
+    undef = GameConfig(
+        features=Features(walking_wild=WalkingWildConfig(enabled=True, symbol="ghost")),
+        **base,
+    )
+    check(any("walking_wild.symbol 未定义" in e for e in undef.validate()), "符号未定义被拦截")
+
+
 def test_session() -> None:
     print("[engine] 会话与钱包")
     machine = get_registry().get("lucky_fruits")
@@ -759,6 +879,8 @@ def main() -> int:
     test_colossal_config_validation()
     test_mystery_symbols()
     test_mystery_config_validation()
+    test_walking_wild()
+    test_walking_wild_config_validation()
     test_session()
     test_hot_reload()
     test_rtp_regression()

@@ -23,7 +23,68 @@ __all__ = [
     "resolve_pick_bonus",
     "place_colossal_symbol",
     "reveal_mystery_symbols",
+    "walk_wilds",
 ]
+
+
+def walk_wilds(
+    grid: Grid,
+    ww: Any,
+    walkers: Sequence[Sequence[int]],
+    phase: str = "base",
+) -> Tuple[List[List[int]], Optional[Dict[str, Any]]]:
+    """行走 Wild：把已有 Wild 整体左移一步写入网格，并登记本局新落下的 Wild。
+
+    返回 `(新的行走落点列表, 事件描述)`。**不消耗随机数**——移动是确定性的，
+    因此前后端只要状态一致就一定同构。
+
+    * 移出网格（reel < 0）的行走 Wild 消失
+    * 撞到受保护符号（默认 Scatter）时该 Wild 也消失，避免破坏触发判定
+    * 本局新落下的同符号 Wild 从**下一局**开始行走
+    """
+    if not ww or not ww.enabled:
+        return [], None
+    if phase not in (ww.phases or ["free_spins"]):
+        return [], None
+
+    protected = set(ww.protected_symbols or [])
+    step = int(ww.steps_per_spin or 1)
+    if ww.direction == "right":
+        step = -step
+
+    moved: List[List[int]] = []
+    for pos in walkers or []:
+        reel = int(pos[0]) - step
+        row = int(pos[1])
+        if not (0 <= reel < len(grid)) or not (0 <= row < len(grid[reel])):
+            continue  # 移出网格 -> 消失
+        if grid[reel][row] in protected:
+            continue  # 撞到受保护符号 -> 消失
+        moved.append([reel, row])
+
+    for reel, row in moved:
+        grid[reel][row] = ww.symbol
+
+    # 本局屏上所有该符号（含刚移动的 + 自然落下的）都是下一局的行走 Wild
+    current: List[List[int]] = []
+    for reel_idx, column in enumerate(grid):
+        for row_idx, sym in enumerate(column):
+            if sym == ww.symbol:
+                current.append([reel_idx, row_idx])
+
+    if ww.max_walkers and len(current) > int(ww.max_walkers):
+        current = current[: int(ww.max_walkers)]
+
+    event: Optional[Dict[str, Any]] = None
+    if moved or current:
+        event = {
+            "type": "walking_wild",
+            "symbol": ww.symbol,
+            "moved": [list(p) for p in moved],
+            "positions": [list(p) for p in current],
+            "count": len(current),
+        }
+    return current, event
 
 
 def reveal_mystery_symbols(

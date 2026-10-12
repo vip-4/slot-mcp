@@ -110,6 +110,31 @@
       }
     },
     {
+      "game": "frost_wolf",
+      "alt": "冰原狼踪机台主题图：雪原上的狼与极光",
+      "provider": "pexels",
+      "page_url": "https://www.pexels.com/photo/playful-wolves-interacting-in-snowy-forest-36275003/",
+      "author": "Leon Aschemann",
+      "author_url": "https://www.pexels.com/@leon-aschemann-734730704",
+      "license": "Pexels License（可免费商用，无需署名但建议署名）",
+      "files": {
+        "hero": {
+          "path": "frost_wolf-hero.jpg",
+          "width": 960,
+          "height": 540,
+          "bytes": 87526,
+          "source": "https://images.pexels.com/photos/36275003/pexels-photo-36275003.jpeg?auto=compress&cs=tinysrgb&fit=crop&w=960&h=540"
+        },
+        "og": {
+          "path": "frost_wolf-og.jpg",
+          "width": 1200,
+          "height": 630,
+          "bytes": 122393,
+          "source": "https://images.pexels.com/photos/36275003/pexels-photo-36275003.jpeg?auto=compress&cs=tinysrgb&fit=crop&w=1200&h=630"
+        }
+      }
+    },
+    {
       "game": "lucky_fruits",
       "alt": "幸运水果机台主题图：鲜艳的樱桃与水果特写",
       "provider": "pexels",

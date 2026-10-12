@@ -44,8 +44,20 @@ blender-slot-mcp/
 │   └── tools/verify_rtp.py       #   RTP 回归验证（可作 CI 门槛）
 │
 ├── blender_addon/slot_mcp_bridge.py   # Blender 侧插件：机台搭建 + 转轮动画
-├── web/{index.html,styles.css,app.js} # 前端界面
-└── tests/                             # 引擎 / MCP / 桥接 / UI 四套自测
+├── web/{index.html,styles.css,app.js} # 前端界面（依赖 Python HTTP API）
+│
+├── web_static/                        # 静态站手写源码（无后端依赖）
+│   ├── js/engine.js                   #   纯前端引擎（与 Python 引擎语义等价）
+│   ├── js/app.js                      #   交互层：加载配置 → 跑一局 → 播放动画
+│   └── assets/styles.css
+├── tools/build_static.py              # 静态站生成器（SEO / GEO / 结构化数据）
+├── static/                            # 生成产物：可直接托管的静态站（站点根）
+│   ├── index.html                     #   首页（含要点速览 / 对比表 / 术语表 / FAQ）
+│   ├── games/<id>.html                #   5 个机台详情页
+│   ├── data/games.json                #   机台配置（含与 Python 一致的虚拟条带）
+│   ├── robots.txt / sitemap.xml / llms.txt / manifest.webmanifest / 404.html
+│   └── assets/{styles.css,favicon.svg,og-image.png,icon-*.png}
+└── tests/                             # 引擎 / MCP / 桥接 / UI / 静态站 五套自测
 ```
 
 ## 2. 安装与启动
@@ -148,13 +160,58 @@ python -m slotmcp.ui.http_api --port 8787
 
 引擎侧零改动：`SlotMachine.spin()` 已经是唯一的通用入口，UI / MCP / Blender 自动可用。
 
-## 7. 稳定性设计要点
+## 7. 静态站（生产部署形态，零后端）
+
+`static/` 是**可直接托管的站点根**：无服务端、无接口、无第三方依赖，扔到任意静态托管
+（Gitee Pages / AtomGit Pages / GitHub Pages / Nginx / OSS）即可上线。
+
+```bash
+# 生成（--site-url 决定 canonical / OG / sitemap 的绝对地址）
+python tools/build_static.py --site-url https://vip882.gitee.io/slot-games
+
+# 本地预览
+python -m http.server 8080 --directory static   # 打开 http://127.0.0.1:8080
+```
+
+**前后端数学一致**：Python 侧把「已展开 + 已洗牌」的虚拟条带随配置一起导出，
+前端引擎直接复用同一份条带——洗牌排布不同会改变 Scatter 聚集度、进而改变触发频率与 RTP。
+`web_static/js/engine.js` 是 Python 引擎的等价端口，实测两侧 RTP 在统计误差内一致。
+
+### 7.1 SEO
+
+| 项 | 内容 |
+| --- | --- |
+| 基础 meta | `title` / `description` / `keywords` / `robots(max-image-preview:large)` / `author` / `theme-color` |
+| Open Graph | `og:type` `og:site_name` `og:locale` `og:title` `og:description` `og:url` `og:image(1200×630)` `og:image:alt` |
+| Twitter Card | `summary_large_image` + title / description / image / image:alt |
+| 结构化数据 | `WebSite` `Organization` `ItemList` `SoftwareApplication` `FAQPage` `BreadcrumbList` `HowTo`（详情页） |
+| 站点配套 | `robots.txt`（含 Sitemap 声明）、`sitemap.xml`（6 条 URL）、`manifest.webmanifest`、`404.html` |
+
+### 7.2 GEO（生成式引擎优化）
+
+面向 AI 摘要与引用：**所有事实都以静态 HTML 输出**，不执行 JS 也能读到完整内容。
+
+* 「要点速览」结论式列表 + 机台参数对比**表格**（结构化、易被引用）
+* 术语表（`<dl>`）逐条定义 RTP / 波动率 / Ways / Hold & Win / 级联
+* 7 条 FAQ 同时输出为可见文本与 `FAQPage` 结构化数据
+* `llms.txt`：关键事实 + 机台清单 + 问答的纯文本摘要，供 AI 直接抓取
+* 每个机台详情页独立 canonical + `SoftwareApplication`/`HowTo`，便于按主题被检索
+
+### 7.3 性能与可访问性
+
+* 单 CSS + 两个 `defer` 脚本，零外部请求；数据仅 37 KB JSON（可预加载）
+* 语义化结构：`header/nav/main/article/section/footer`、`h1→h2→h3` 层级、`<table>`+`caption`+`scope`、`aria-current`
+* 可访问性：跳转链接、`aria-live` 播报中奖与特性、`role="img"+aria-label` 标注符号、键盘空格旋转、`:focus-visible` 焦点环
+* `prefers-reduced-motion` 下关闭动画与过渡
+
+## 8. 稳定性设计要点
 
 * **无界循环防护**：单次下注最多 300 轮、400 步、40 层级联，免费旋转累计上限 200 次（可防无限再触发）
 * **Blender 桥接**：4 字节长度封帧、请求级超时、心跳探活、下一次调用自动重连并重试一次；Blender 未启动时 `status()` 返回结构化降级信息而不是崩溃
 * **错误不穿透**：MCP / HTTP 边界统一收敛为结构化错误，单个请求失败不会中断会话
 * **可复现**：`slot_spin(seed=...)` 可 1:1 复盘异常局，便于审计
 * **主线程约束**：Blender 侧所有改数据的操作都在主线程（`bpy.app.timers`）执行
+* **静态站一致性**：`tests/test_static_site.py` 校验导出配置可校验、条带带 `expanded`、六类 meta/JSON-LD 齐全、内链无 404（配合本地 HTTP 冒烟）
 
 更多细节见 `docs/REQUIREMENTS.md`（需求说明）、`docs/ARCHITECTURE.md`（架构）、
-`docs/MCP_INTEGRATION.md`（MCP 与 Blender 通信）。
+`docs/MCP_INTEGRATION.md`（MCP 与 Blender 通信）、`docs/STATIC_SITE.md`（静态站与 SEO/GEO）。

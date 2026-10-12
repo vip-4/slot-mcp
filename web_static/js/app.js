@@ -297,7 +297,7 @@
       total += step.stepWin;
       const positions = [];
       step.wins.forEach((w) => {
-        if (w.kind === 'line' || w.kind === 'ways' || w.kind === 'scatter') {
+        if (w.kind === 'line' || w.kind === 'ways' || w.kind === 'scatter' || w.kind === 'collect') {
           w.positions.forEach((p) => positions.push(p));
         }
       });
@@ -321,14 +321,15 @@
       } else if (step.phase === 'hold_win') {
         el('feature-badge').textContent = 'Hold & Win 宝箱重转';
       }
-      if (step.events && step.events.length) {
-        const e = step.events[0];
+      (step.events || []).forEach((e) => {
         if (e.type === 'expanding_wild') say(`彩虹 Wild 第 ${e.reels.map((r) => r + 1).join('/')} 轴扩展，赠送 ${e.respins} 次重转`);
         else if (e.type === 'free_spins_trigger') say(`触发免费旋转：${e.count} 个 Scatter，获得 ${e.spins} 次`);
         else if (e.type === 'free_spins_retrigger') say(`再触发：额外 ${e.spins} 次免费旋转`);
         else if (e.type === 'hold_win_trigger') say(`Hold & Win 触发：锁定 ${e.locked} 个赏金符号`);
         else if (e.type === 'full_grid_bonus') say(`全屏大奖 +${e.amount}`);
-      }
+        else if (e.type === 'random_wild') say(`锦鲤跃入水面：随机投放 ${e.count} 个 Wild`);
+        else if (e.type === 'collect') say(`锦鲤纳福：收集 ${e.coins} 枚金币，+${e.amount}`);
+      });
       if (!reduceMotion) await sleep(step.phase === 'hold_win' ? 620 : i === 0 ? 420 : 340);
       if (step.stepWin > 0) el('round-win').textContent = total.toFixed(2);
     }

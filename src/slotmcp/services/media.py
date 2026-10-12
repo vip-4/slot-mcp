@@ -55,6 +55,11 @@ THEME_QUERIES: Dict[str, Dict[str, str]] = {
         "pixabay": "galaxy stars space",
         "alt": "星际远征机台主题图：星系与深空星云",
     },
+    "fortune_koi": {
+        "pexels": "koi fish pond lotus water",
+        "pixabay": "koi pond lotus",
+        "alt": "锦鲤纳福机台主题图：锦鲤池塘与莲花",
+    },
 }
 
 HERO_SIZE = (960, 540)

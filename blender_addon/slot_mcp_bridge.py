@@ -347,6 +347,10 @@ def op_animate_spin(params: Dict[str, Any]) -> Dict[str, Any]:
             cell.data.materials.clear()
             cell.data.materials.append(_material_for(f"MAT_{symbol_id}", color))
 
+    # 特性高亮：把事件命中的格子单独上色，便于在 Blender 里一眼看到
+    # 随机 Wild 落点 / 被收集的金币 / 扩展 Wild / Hold & Win 锁定格
+    highlights = _apply_highlights(params, steps, last_grid, root_name)
+
     scene.frame_end = max(cursor + 12, getattr(scene, "frame_end", cursor + 12))
     _ = frame_start  # 保持接口稳定，不做额外处理
     return {
@@ -356,7 +360,44 @@ def op_animate_spin(params: Dict[str, Any]) -> Dict[str, Any]:
         "reels": reels,
         "rows": rows,
         "steps": len(steps),
+        "highlights": highlights,
     }
+
+
+# 事件类型 -> 高亮用途（只挑有明确落点的事件，其余保持原样）
+_EVENT_KINDS = ("random_wild", "collect", "expanding_wild", "hold_win")
+
+
+def _apply_highlights(
+    params: Dict[str, Any], steps: Any, last_grid: Any, root_name: str
+) -> Dict[str, int]:
+    """把各步骤事件涉及的格子打上 `slot_event` 标记并换成高亮材质。"""
+    theme = params.get("theme") or {}
+    accent = theme.get("accent") or "#ffd45c"
+    counts: Dict[str, int] = {}
+
+    for step in steps or []:
+        for ev in step.get("events") or []:
+            kind = ev.get("type")
+            if kind not in _EVENT_KINDS:
+                continue
+            positions = ev.get("positions") or []
+            if kind == "collect":
+                # 收集事件只带金币数量，落点用中奖位置（WinEvent.positions）表达
+                for win in step.get("wins") or []:
+                    if win.get("kind") == "collect":
+                        positions = list(positions) + list(win.get("positions") or [])
+            for pos in positions:
+                if not isinstance(pos, (list, tuple)) or len(pos) != 2:
+                    continue
+                cell = bpy.data.objects.get(f"{root_name}_C{int(pos[0])}_{int(pos[1])}")
+                if cell is None:
+                    continue
+                cell["slot_event"] = kind
+                cell.data.materials.clear()
+                cell.data.materials.append(_material_for(f"MAT_EV_{kind}", accent))
+                counts[kind] = counts.get(kind, 0) + 1
+    return counts
 
 
 def _symbol_color(params: Dict[str, Any], symbol_id: str) -> str:

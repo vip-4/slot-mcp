@@ -15,7 +15,14 @@ from typing import Any, Dict, List, Optional, Sequence
 
 from .config import ConfigError, GameConfig, PayMode
 from .evaluator import WinEvent, count_symbol, evaluate_grid
-from .features import count_symbols, cascade_collapse, collect_positions, keys_to_positions
+from .features import (
+    cascade_collapse,
+    collect_coins,
+    collect_positions,
+    count_symbols,
+    keys_to_positions,
+    place_random_wilds,
+)
 from .reels import Grid, ReelStripSet
 from .rng import SlotRNG
 
@@ -334,6 +341,21 @@ class SlotMachine:
 
         grid, stops = self._roll(st, strip_set)
 
+        # 随机 Wild 投放：必须在「替代计算之前、触发判定之前」完成，
+        # 这样它既能参与线赔，也能影响 Scatter/币值的可见性（但不会覆盖受保护符号）。
+        rw = cfg.features.random_wild
+        if rw and rw.enabled and st.phase in (rw.phases or [PHASE_BASE]):
+            placed = self._place_random_wilds(grid, rw)
+            if placed:
+                step_events.append(
+                    {
+                        "type": "random_wild",
+                        "symbol": rw.symbol,
+                        "count": len(placed),
+                        "positions": [[r, c] for r, c in placed],
+                    }
+                )
+
         ew = cfg.features.expanding_wild
         if ew and st.phase == PHASE_BASE:
             target_reels = ew.reels or list(range(cfg.reels))
@@ -386,6 +408,62 @@ class SlotMachine:
                 step.free_spin_remaining = st.free_spins_left
         return steps
 
+    def _place_random_wilds(self, grid: Grid, rw) -> List[tuple]:
+        """按权重抽样投放个数，再随机落点。"""
+        keys = sorted(int(k) for k in rw.counts)
+        weights = [float(rw.counts[k]) for k in keys]
+        total = sum(weights)
+        if total <= 0:
+            return []
+        target = self.rng.random() * total
+        chosen = keys[-1]
+        acc = 0.0
+        for key, weight in zip(keys, weights):
+            acc += weight
+            if target < acc:
+                chosen = key
+                break
+        return place_random_wilds(
+            grid,
+            rw.symbol,
+            chosen,
+            self.rng,
+            exclude_reels=rw.exclude_reels,
+            protected_symbols=rw.protected_symbols,
+        )
+
+    def _collect_award(
+        self, cfg, st: GameState, ctx: BetContext, grid: Grid
+    ) -> Optional[WinEvent]:
+        """Cash Collect：收集者 + 币值符号同时出现时，一次性收入全部币值。"""
+        col = cfg.features.collect
+        if not col or not col.enabled:
+            return None
+        if not any(col.collector in column for column in grid):
+            return None
+        coins = collect_coins(grid, col.coin_symbols)
+        if not coins:
+            return None
+        multiplier = col.free_award_multiplier if st.phase == PHASE_FREE else col.award_multiplier
+        pot = sum(col.coin_values.get(grid[r][c], 0.0) for r, c in coins)
+        has_jackpot = bool(col.jackpot_symbol) and any(
+            col.jackpot_symbol == grid[r][c] for r, c in coins
+        )
+        if has_jackpot:
+            pot += col.jackpot_value
+        if pot <= 0:
+            return None
+        amount = pot * multiplier * ctx.total_bet
+        return WinEvent(
+            kind="collect",
+            symbol=col.collector,
+            count=len(coins),
+            positions=coins,
+            base_amount=round(pot * ctx.total_bet, 6),
+            amount=round(amount, 6),
+            label=f"收集 {len(coins)} 枚金币 ×{multiplier:g}",
+        )
+
     def _settle(
         self,
         st: GameState,
@@ -412,8 +490,21 @@ class SlotMachine:
                 lines=ctx.lines,
                 active_lines=ctx.active_lines,
             )
+            events: List[Dict[str, Any]] = list(extra_events or []) if guard == 0 else []
+            # Cash Collect 只对「新鲜网格」结算：级联派生网格会让同一枚币被重复收取
+            if guard == 0:
+                award = self._collect_award(cfg, st, ctx, grid)
+                if award is not None:
+                    wins.append(award)
+                    events.append(
+                        {
+                            "type": "collect",
+                            "collector": cfg.features.collect.collector,
+                            "coins": len(award.positions),
+                            "amount": award.amount,
+                        }
+                    )
             step_win = round(sum(w.amount for w in wins), 6)
-            events = list(extra_events or []) if guard == 0 else []
             steps.append(
                 SpinStep(
                     index=len(steps),
@@ -765,7 +856,7 @@ _REGISTRY: Optional[GameRegistry] = None
 
 
 def get_registry(reload: bool = False) -> GameRegistry:
-    """默认注册表单例：懒加载内置 5 款机台。"""
+    """默认注册表单例：懒加载内置 6 款机台。"""
     global _REGISTRY
     if _REGISTRY is None or reload:
         registry = GameRegistry()

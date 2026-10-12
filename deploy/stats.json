@@ -1,37 +1,43 @@
 {
   "schema": "slotmcp.stats/1",
-  "generated": "2026-10-12T19:10:30+00:00",
+  "generated": "2026-10-12T20:26:49+00:00",
   "source": "neon:primary",
   "rtp": [
     {
       "game_id": "candy_carnival",
-      "runs": 1,
-      "spins": 20000,
-      "rtp": 0.9743
+      "runs": 2,
+      "spins": 40000,
+      "rtp": 0.973
     },
     {
       "game_id": "dragon_palace",
+      "runs": 2,
+      "spins": 40000,
+      "rtp": 0.9758
+    },
+    {
+      "game_id": "fortune_koi",
       "runs": 1,
       "spins": 20000,
-      "rtp": 0.9674
+      "rtp": 0.9512
     },
     {
       "game_id": "lucky_fruits",
-      "runs": 1,
-      "spins": 20000,
-      "rtp": 0.9576
+      "runs": 2,
+      "spins": 40000,
+      "rtp": 0.9598
     },
     {
       "game_id": "pharaoh_tomb",
-      "runs": 1,
-      "spins": 20000,
-      "rtp": 0.8951
+      "runs": 2,
+      "spins": 40000,
+      "rtp": 0.8847
     },
     {
       "game_id": "star_expedition",
-      "runs": 1,
-      "spins": 20000,
-      "rtp": 0.9627
+      "runs": 2,
+      "spins": 40000,
+      "rtp": 0.9354
     }
   ],
   "top_scores": [
@@ -42,7 +48,11 @@
     }
   ],
   "players": 1,
-  "deploy_runs": 0,
-  "last_deploy": null,
-  "sim_spins": 100000
+  "deploy_runs": 3,
+  "last_deploy": {
+    "site_url": "https://vip-4.github.io/slot-games",
+    "ok": true,
+    "created_at": "2026-10-12 19:49:19.858812+00"
+  },
+  "sim_spins": 220000
 }

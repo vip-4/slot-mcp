@@ -89,10 +89,12 @@
       ],
       "features": [
         "cascade",
+        "collect",
         "expanding_wild",
         "free_spins",
         "gamble",
-        "hold_win"
+        "hold_win",
+        "random_wild"
       ]
     },
     {
@@ -167,10 +169,129 @@
       ],
       "features": [
         "cascade",
+        "collect",
         "expanding_wild",
         "free_spins",
         "gamble",
-        "hold_win"
+        "hold_win",
+        "random_wild"
+      ]
+    },
+    {
+      "id": "fortune_koi",
+      "name": "锦鲤纳福",
+      "reels": 5,
+      "rows": 3,
+      "pay_mode": "lines",
+      "theme": {
+        "id": "koi",
+        "name": "锦鲤池塘",
+        "palette": {
+          "grid": "#0d3b36",
+          "reel": "#125550",
+          "win": "#ffd45c",
+          "wild": "#ffe9a8",
+          "coin": "#ffcc33"
+        },
+        "cabinet_color": "#1b4b4a",
+        "background": "#06231f",
+        "accent": "#ffd45c",
+        "music": ""
+      },
+      "symbols": [
+        {
+          "id": "carp",
+          "name": "锦鲤",
+          "kind": "standard",
+          "color": "#ff9d5c",
+          "glyph": "🐟"
+        },
+        {
+          "id": "ingot",
+          "name": "金元宝",
+          "kind": "standard",
+          "color": "#ffd45c",
+          "glyph": "🪙"
+        },
+        {
+          "id": "lantern",
+          "name": "灯笼",
+          "kind": "standard",
+          "color": "#ff6b6b",
+          "glyph": "🏮"
+        },
+        {
+          "id": "fan",
+          "name": "折扇",
+          "kind": "standard",
+          "color": "#8ad7ff",
+          "glyph": "🪭"
+        },
+        {
+          "id": "knot",
+          "name": "中国结",
+          "kind": "standard",
+          "color": "#ff9ec4",
+          "glyph": "🎀"
+        },
+        {
+          "id": "coin_purse",
+          "name": "福袋",
+          "kind": "standard",
+          "color": "#c6a4ff",
+          "glyph": "🎴"
+        },
+        {
+          "id": "wild",
+          "name": "锦鲤 Wild（收集者）",
+          "kind": "wild",
+          "color": "#ffe9a8",
+          "glyph": "🌊"
+        },
+        {
+          "id": "scatter",
+          "name": "莲花 Scatter",
+          "kind": "scatter",
+          "color": "#ffd9ec",
+          "glyph": "🪷"
+        },
+        {
+          "id": "coin_b",
+          "name": "铜钱",
+          "kind": "bonus",
+          "color": "#c98b4b",
+          "glyph": "🟤"
+        },
+        {
+          "id": "coin_s",
+          "name": "银锭",
+          "kind": "bonus",
+          "color": "#d7e3ff",
+          "glyph": "⚪"
+        },
+        {
+          "id": "coin_g",
+          "name": "金元宝币",
+          "kind": "bonus",
+          "color": "#ffcc33",
+          "glyph": "🟡"
+        },
+        {
+          "id": "coin_jp",
+          "name": "福袋大奖",
+          "kind": "bonus",
+          "color": "#ff5577",
+          "glyph": "🎁"
+        }
+      ],
+      "features": [
+        "cascade",
+        "collect",
+        "expanding_wild",
+        "free_spins",
+        "gamble",
+        "hold_win",
+        "random_wild"
       ]
     },
     {
@@ -245,10 +366,12 @@
       ],
       "features": [
         "cascade",
+        "collect",
         "expanding_wild",
         "free_spins",
         "gamble",
-        "hold_win"
+        "hold_win",
+        "random_wild"
       ]
     },
     {
@@ -344,10 +467,12 @@
       ],
       "features": [
         "cascade",
+        "collect",
         "expanding_wild",
         "free_spins",
         "gamble",
-        "hold_win"
+        "hold_win",
+        "random_wild"
       ]
     },
     {
@@ -429,10 +554,12 @@
       ],
       "features": [
         "cascade",
+        "collect",
         "expanding_wild",
         "free_spins",
         "gamble",
-        "hold_win"
+        "hold_win",
+        "random_wild"
       ]
     }
   ]

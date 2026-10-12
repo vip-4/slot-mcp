@@ -49,12 +49,16 @@ result.to_dict()                                    # 3) 统一 JSON 契约
 ```
 SlotMachine.spin()
  ├─ 阶段判定：base / free_spins / hold_win
- ├─ _run_spin：选择条带集合 → 采样网格 → 套用粘性 Wild → 可选扩展 Wild
- │            └─ _settle：结算 →（级联则移除中奖格、下沉补位、倍率+1 → 重新结算）
+ ├─ _run_spin：选择条带集合 → 采样网格 → 随机 Wild 投放 → 套用粘性 Wild → 可选扩展 Wild
+ │            └─ _settle：结算（线 / Ways / Scatter / Cash Collect）
+ │                        →（级联则移除中奖格、下沉补位、倍率+1 → 重新结算）
  │            └─ 重转循环（扩展 Wild 配置了 respins 时）
  ├─ _apply_triggers：仅“新鲜网格”参与计数 → 触发免费旋转 / Hold&Win
  └─ 循环直到阶段回到 base 或触碰上限
 ```
+
+顺序要点：**随机 Wild 投放**必须在替代与触发判定之前（否则投放的 Wild 无法参与线赔），
+**Cash Collect** 只对新鲜网格结算（否则级联派生网格会让同一枚币被重复收取）。
 
 状态机（`GameState`）字段全部可 JSON 序列化，因此可以：
 

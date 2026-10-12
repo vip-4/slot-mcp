@@ -60,6 +60,31 @@
       }
     },
     {
+      "game": "fortune_koi",
+      "alt": "锦鲤纳福机台主题图：锦鲤池塘与莲花",
+      "provider": "pexels",
+      "page_url": "https://www.pexels.com/photo/group-of-koi-fish-in-a-pond-20099418/",
+      "author": "Dmitry Kharitonov",
+      "author_url": "https://www.pexels.com/@dmitry-kharitonov-911287485",
+      "license": "Pexels License（可免费商用，无需署名但建议署名）",
+      "files": {
+        "hero": {
+          "path": "fortune_koi-hero.jpg",
+          "width": 960,
+          "height": 540,
+          "bytes": 786928,
+          "source": "https://images.pexels.com/photos/20099418/pexels-photo-20099418.png?auto=compress&cs=tinysrgb&fit=crop&w=960&h=540"
+        },
+        "og": {
+          "path": "fortune_koi-og.jpg",
+          "width": 1200,
+          "height": 630,
+          "bytes": 1124795,
+          "source": "https://images.pexels.com/photos/20099418/pexels-photo-20099418.png?auto=compress&cs=tinysrgb&fit=crop&w=1200&h=630"
+        }
+      }
+    },
+    {
       "game": "lucky_fruits",
       "alt": "幸运水果机台主题图：鲜艳的樱桃与水果特写",
       "provider": "pexels",

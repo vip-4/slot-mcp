@@ -33,7 +33,8 @@ def check(condition: bool, message: str) -> None:
 def test_configuration() -> None:
     print("[engine] 配置与校验")
     ids = game_ids()
-    check(len(ids) == 5, f"内置 5 款机台: {', '.join(ids)}")
+    check(len(ids) == 6, f"内置 6 款机台: {', '.join(ids)}")
+    check("fortune_koi" in ids, "新增机台 fortune_koi 已注册")
     for cfg in iter_game_configs():
         errors = cfg.validate()
         check(not errors, f"{cfg.id} 配置校验通过")
@@ -127,6 +128,143 @@ def test_feature_flows() -> None:
         check(sum(s.step_win for s in hold_steps) > 0, "Hold & Win 有实际派彩")
 
 
+def test_collect_and_random_wild() -> None:
+    print("[engine] 随机 Wild 投放 / Cash Collect")
+    from slotmcp.engine.features import collect_coins, place_random_wilds
+
+    grid = [
+        ["carp", "scatter", "coin_b"],
+        ["ingot", "coin_s", "coin_g"],
+    ]
+    # 保护符号（Scatter / 币值）不得被覆盖
+    placed = place_random_wilds(
+        grid, "wild", 3, SlotRNG("rw"), exclude_reels=[], protected_symbols=["scatter", "coin_b", "coin_s", "coin_g"]
+    )
+    check(len(placed) == 2, f"只覆盖可替换位置（期望 2 个，实际 {len(placed)}）")
+    check(all(grid[r][c] == "wild" for r, c in placed), "落点已替换为 Wild")
+    check(
+        any("scatter" in col for col in grid) and any("coin_g" in col for col in grid),
+        "受保护符号未被覆盖",
+    )
+
+    grid2 = [["carp", "carp"], ["ingot", "ingot"]]
+    placed2 = place_random_wilds(grid2, "wild", 2, SlotRNG("rw2"), exclude_reels=[0], protected_symbols=[])
+    check(all(r == 1 for r, _ in placed2), f"exclude_reels 生效：{placed2}")
+
+    grid3 = [["carp", "carp", "carp"]]
+    coins = collect_coins(grid3, ["coin_b"])
+    check(coins == [], "没有币值符号时收集为空")
+
+    # 收集结算：基础 1x / 免费 2x / 含大奖币
+    koi = get_registry().get("fortune_koi")
+    cfg = koi.config
+    check(
+        cfg.features.random_wild is not None and cfg.features.collect is not None,
+        "fortune_koi 同时启用 random_wild 与 collect",
+    )
+    ctx = koi.build_context(total_bet=1.0)
+    from slotmcp.engine.game import GameState
+
+    st = GameState()
+    grid4 = [
+        ["coin_b", "coin_s", "coin_g"],
+        ["wild", "carp", "carp"],
+        ["carp", "carp", "carp"],
+        ["carp", "carp", "carp"],
+        ["carp", "carp", "carp"],
+    ]
+    award = koi._collect_award(cfg, st, ctx, grid4)
+    check(award is not None and award.kind == "collect", "收集者 + 币值命中时产生 collect 中奖")
+    expected = (0.11 + 0.55 + 2.2) * 1.0
+    check(abs((award.amount or 0) - expected) < 1e-6, f"基础收集额 = {expected}（实际 {award.amount}）")
+
+    st.phase = PHASE_FREE
+    award_free = koi._collect_award(cfg, st, ctx, grid4)
+    check(abs((award_free.amount or 0) - expected * 2) < 1e-6, "免费旋转收集倍率 ×2")
+
+    grid5 = [
+        ["coin_jp", "carp", "carp"],
+        ["wild", "carp", "carp"],
+        ["carp", "carp", "carp"],
+        ["carp", "carp", "carp"],
+        ["carp", "carp", "carp"],
+    ]
+    st.phase = "base"
+    award_jp = koi._collect_award(cfg, st, ctx, grid5)
+    check(abs((award_jp.amount or 0) - 7.0) < 1e-6, f"大奖币按 jackpot_value 结算（实际 {award_jp.amount}）")
+
+    st.phase = "base"
+    grid6 = [["coin_b"] * 3 for _ in range(5)]  # 有币无收集者
+    check(koi._collect_award(cfg, st, ctx, grid6) is None, "缺少收集者时不派奖")
+
+    # 权重 0 表示该符号不在该轴出现（新机台的稀有币依赖此语义）
+    expanded = cfg.reel_sets["base"].expanded(cfg.rows)
+    check(
+        all("coin_jp" not in strip for strip in expanded),
+        "基础条带中权重为 0 的稀有币不出现",
+    )
+    check(any("coin_jp" in strip for strip in cfg.reel_sets["free"].expanded(cfg.rows)), "免费条带保留稀有币")
+
+    # 端到端：能命中 collect / random_wild 事件
+    hit = {"collect": 0, "random_wild": 0}
+    koi.rng = SlotRNG("koi")
+    for _ in range(3000):
+        res = koi.spin(total_bet=1.0)
+        # random_wild / collect 是步骤级事件（result.events 只放触发级事件）
+        for step in res.steps:
+            for e in step.events:
+                if e["type"] in hit:
+                    hit[e["type"]] += 1
+    check(hit["collect"] > 0, f"端到端可触发 Cash Collect（{hit['collect']} 次）")
+    check(hit["random_wild"] > 0, f"端到端可触发随机 Wild（{hit['random_wild']} 次）")
+
+    # 参数可调：调整收集倍率后结果随之变化
+    from slotmcp.engine.config import set_parameter as _set
+
+    before = koi._collect_award(cfg, st, ctx, grid4).amount
+    _set(cfg, "features.collect.award_multiplier", 3.0)
+    after = koi._collect_award(cfg, st, ctx, grid4).amount
+    _set(cfg, "features.collect.award_multiplier", 1.0)
+    check(abs(after - before * 3) < 1e-6, "slot_set_parameter 可调整收集倍率并即时生效")
+
+
+def test_feature_config_validation() -> None:
+    print("[engine] 新特性配置校验")
+    from slotmcp.engine.config import CollectConfig, Features, GameConfig, RandomWildConfig
+
+    bad = GameConfig(
+        id="bad_collect",
+        name="bad",
+        reels=5,
+        rows=3,
+        symbols={"wild": _sym("wild", "wild"), "coin_b": _sym("coin_b", "bonus")},
+        reel_sets={"base": _reel_set(["wild", "coin_b"])},
+        features=Features(
+            collect=CollectConfig(enabled=True, collector="nope", coin_symbols=["coin_b"], coin_values={}),
+            random_wild=RandomWildConfig(enabled=True, symbol="ghost", counts={}, phases=["nonsense"]),
+        ),
+    )
+    errors = bad.validate()
+    joined = " | ".join(errors)
+    check(any("collect.collector" in e for e in errors), f"收集者未定义被拦截：{joined[:120]}")
+    check(any("coin_values" in e for e in errors), "缺少面值被拦截")
+    check(any("random_wild.symbol" in e for e in errors), "随机 Wild 符号未定义被拦截")
+    check(any("counts" in e for e in errors), "随机 Wild 权重为空被拦截")
+    check(any("phases" in e for e in errors), "非法阶段被拦截")
+
+
+def _sym(symbol_id: str, kind: str):
+    from slotmcp.engine.config import Symbol, SymbolKind
+
+    return Symbol(symbol_id, symbol_id, SymbolKind(kind))
+
+
+def _reel_set(symbols):
+    from slotmcp.engine.config import ReelSet
+
+    return ReelSet(name="base", strips=[list(symbols) for _ in range(5)], weights=[{s: 1 for s in symbols} for _ in range(5)])
+
+
 def test_session() -> None:
     print("[engine] 会话与钱包")
     machine = get_registry().get("lucky_fruits")
@@ -198,6 +336,8 @@ def main() -> int:
     test_determinism()
     test_payline_evaluation()
     test_feature_flows()
+    test_collect_and_random_wild()
+    test_feature_config_validation()
     test_session()
     test_hot_reload()
     test_rtp_regression()

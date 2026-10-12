@@ -40,7 +40,7 @@ SRC_DIR = ROOT / "web_static"
 DEFAULT_SITE_URL = "https://vip882.gitee.io/slot-games"
 
 SITE_NAME = "Blender SLOT 游戏合集"
-SITE_TAGLINE = "5 款免费在线老虎机 · 纯静态 · 无需下载"
+SITE_TAGLINE = "6 款免费在线老虎机 · 纯静态 · 无需下载"
 ORG_NAME = "Blender Slot MCP"
 BUILD_DATE = date.today().isoformat()
 
@@ -51,6 +51,7 @@ MEASURED_RTP = {
     "dragon_palace": 0.9720,
     "pharaoh_tomb": 0.9540,
     "star_expedition": 0.9578,
+    "fortune_koi": 0.9676,
 }
 
 VOL_CN = {"low": "低", "medium": "中", "medium-high": "中高", "high": "高"}
@@ -61,6 +62,8 @@ FEATURE_CN = {
     "cascade": "级联（雪崩）连击",
     "expanding_wild": "扩展 Wild + 锁轴重转",
     "gamble": "红黑翻倍博彩",
+    "random_wild": "随机 Wild 投放",
+    "collect": "Cash Collect 金币收集",
 }
 
 GAME_COPY = {
@@ -89,16 +92,22 @@ GAME_COPY = {
         "级联倍率逐级递增；黑洞 Scatter 触发免费旋转，配合级联可在单局内叠加出高倍率。",
         "best_for": "喜欢级联连击与超多通路的玩家",
     },
+    "fortune_koi": {
+        "summary": "锦鲤纳福采用 5×3 网格与 20 条赔付线。锦鲤 Wild 会随机跃入水面（每局以权重投放 0~3 枚），"
+        "并作为「收集者」把屏上全部金币面值一次性收入囊中；莲花 Scatter 触发 8/12/16 次免费旋转，"
+        "免费旋转内币值更密且收集倍率翻倍。",
+        "best_for": "喜欢 Cash Collect 收集玩法与中等偏高波动的玩家",
+    },
 }
 
 FAQ = [
     {
         "q": "这些老虎机游戏是完全免费的吗？",
-        "a": "是的。5 款机台全部免费、无需注册、无需下载，打开网页即可游玩，游戏内使用的是虚拟积分，不涉及任何真实货币。",
+        "a": "是的。6 款机台全部免费、无需注册、无需下载，打开网页即可游玩，游戏内使用的是虚拟积分，不涉及任何真实货币。",
     },
     {
         "q": "RTP（返还率）是多少？",
-        "a": "五款机台的目标 RTP 均为 96%。以每机台 20 万局蒙特卡洛仿真实测，实际 RTP 落在 95.40% 至 97.20% 之间，"
+        "a": "六款机台的目标 RTP 均为 96%。以每机台 20 万局蒙特卡洛仿真实测，实际 RTP 落在 95.40% 至 97.20% 之间，"
         "具体数值见本页「机台参数对比」表。",
     },
     {
@@ -111,8 +120,9 @@ FAQ = [
     },
     {
         "q": "老虎机的赔付是怎么判定的？",
-        "a": "固定线机台（幸运水果、糖果狂欢、龙宫探宝）按赔付线从左至右逐轴连续匹配；"
-        "全盘 Ways 机台（法老之墓、星际远征）按相邻轴出现次数相乘得到通路数。Scatter 按全盘个数赔付，单位与总注挂钩。",
+        "a": "固定线机台（幸运水果、糖果狂欢、龙宫探宝、锦鲤纳福）按赔付线从左至右逐轴连续匹配；"
+        "全盘 Ways 机台（法老之墓、星际远征）按相邻轴出现次数相乘得到通路数。Scatter 按全盘个数赔付，单位与总注挂钩；"
+        "锦鲤纳福另有 Cash Collect：屏上出现锦鲤 Wild 时，按总注倍数收集全部金币面值。",
     },
     {
         "q": "能不能自己调整赔率或加新机台？",
@@ -134,11 +144,13 @@ TERMS = [
     ("Wild（百搭）", "可替代其它参与赔付的符号，部分机台还带有倍率或扩展、锁定效果。"),
     ("Scatter（ scatter 散落符号）", "按全盘出现个数赔付或触发免费旋转，不要求落在赔付线上。"),
     ("Hold & Win（宝箱重转）", "触发后锁定赏金符号并重置重转次数，每新增一个赏金符号都会延长重转，可开出固定奖池。"),
+    ("Cash Collect（金币收集）", "屏上同时出现「收集者」（通常是 Wild）与币值符号时，一次性收取全部币值；币值以总注倍数计。"),
+    ("随机 Wild 投放", "每局按权重在网格中随机投放若干 Wild，投放后仍参与线赔计算；常用于提升基础 game 的节奏感。"),
     ("级联（Cascade / 雪崩）", "中奖符号消除后上方符号坠落补位，形成一次投注多次结算，倍率逐级递增。"),
 ]
 
 HOW_TO = [
-    "在「机台」下拉框中选择一款主题（共 5 款）。",
+    "在「机台」下拉框中选择一款主题（共 6 款）。",
     "在「每局总注」中选择投注额度，范围 0.20 至 100.00 积分。",
     "点击「旋转」或按空格键开始一局；点击「自动 10 次」可连续游玩。",
     "中奖符号会高亮，级联 / 重转 / 免费旋转 / Hold & Win 会按步骤依次播放。",
@@ -434,7 +446,7 @@ def compare_table(games: List[Dict[str, Any]]) -> str:
         for g in games
     )
     return f"""<div class="table-scroll"><table>
-<caption>五款机台参数对比（实测 RTP 为每机台 20 万局蒙特卡洛仿真结果）</caption>
+<caption>{len(games)} 款机台参数对比（实测 RTP 为每机台 20 万局蒙特卡洛仿真结果）</caption>
 <thead><tr><th scope="col">机台</th><th scope="col">网格</th><th scope="col">赔付方式</th>
 <th scope="col">波动率</th><th scope="col">目标 RTP</th><th scope="col">实测 RTP</th>
 <th scope="col">特性</th><th scope="col">最高倍率</th></tr></thead>
@@ -472,10 +484,10 @@ def build_index(games: List[Dict[str, Any]], site_url: str) -> str:
     names = {g["id"]: g["name"] for g in games}
     rtp_values = [MEASURED_RTP.get(g["id"], g["rtp_num"]) for g in games]
     facts = f"""<ul class="fact-list">
-  <li>共 5 款主题机台：幸运水果、糖果狂欢、龙宫探宝、法老之墓、星际远征，全部共用一套 CONFIG 引擎。</li>
+  <li>共 {len(games)} 款主题机台：{'、'.join(names[g['id']] for g in games)}，全部共用一套 CONFIG 引擎。</li>
   <li>目标 RTP 96%，20 万局实测 RTP 区间 {min(rtp_values) * 100:.2f}% – {max(rtp_values) * 100:.2f}%。</li>
   <li>赔付方式覆盖 5 / 20 / 50 条固定线与 243 / 4096 Ways 全盘两种体系。</li>
-  <li>特性覆盖免费旋转、Hold &amp; Win 宝箱重转、级联连击、扩展 Wild 锁轴重转、红黑翻倍博彩。</li>
+  <li>特性覆盖免费旋转、Hold &amp; Win 宝箱重转、级联连击、扩展 Wild 锁轴重转、随机 Wild 投放、Cash Collect 金币收集与红黑翻倍博彩。</li>
   <li>纯静态网页：无后端接口、无注册、无下载，移动端自适应，积分保存在浏览器本地。</li>
   <li>同一引擎可通过 MCP 供 Blender 侧驱动三维机台动画，源码以 MIT 协议开源。</li>
 </ul>"""
@@ -500,7 +512,7 @@ def build_index(games: List[Dict[str, Any]], site_url: str) -> str:
         {
             "@context": "https://schema.org",
             "@type": "ItemList",
-            "name": "5 款免费在线老虎机",
+            "name": f"{len(games)} 款免费在线老虎机",
             "numberOfItems": len(games),
             "itemListElement": [
                 {
@@ -543,7 +555,7 @@ def build_index(games: List[Dict[str, Any]], site_url: str) -> str:
         },
     ]
     head = head_html(
-        title=f"{SITE_NAME}｜5 款免费在线老虎机（免下载 · 纯静态）",
+        title=f"{SITE_NAME}｜{len(games)} 款免费在线老虎机（免下载 · 纯静态）",
         description=SITE_DESCRIPTION,
         keywords=SITE_KEYWORDS,
         canonical=f"{site_url}/index.html",
@@ -556,7 +568,7 @@ def build_index(games: List[Dict[str, Any]], site_url: str) -> str:
 <article>
   <header class="hero">
     <p class="small muted">免费 · 纯静态网页 · 无需注册与下载</p>
-    <h1>5 款免费在线老虎机：一套 CONFIG 引擎驱动的 SLOT 合集</h1>
+    <h1>{len(games)} 款免费在线老虎机：一套 CONFIG 引擎驱动的 SLOT 合集</h1>
     <p class="lead">{escape(SITE_DESCRIPTION)}</p>
     <h2 id="facts-title">要点速览</h2>
     {facts}
@@ -565,7 +577,7 @@ def build_index(games: List[Dict[str, Any]], site_url: str) -> str:
   {cabinet_html(games, default["id"])}
 
   <section id="games" aria-labelledby="games-title">
-    <h2 id="games-title">5 款机台一览</h2>
+    <h2 id="games-title">{len(games)} 款机台一览</h2>
     {cards_html(games)}
   </section>
 
@@ -840,13 +852,14 @@ def write_text(path: Path, content: str) -> None:
 
 # --------------------------------------------------------------------------- 主流程
 SITE_DESCRIPTION = (
-    "5 款免费在线老虎机（幸运水果、糖果狂欢、龙宫探宝、法老之墓、星际远征）"
+    "6 款免费在线老虎机（幸运水果、糖果狂欢、龙宫探宝、法老之墓、星际远征、锦鲤纳福）"
     "共用一套 CONFIG 引擎：固定线与 243/4096 Ways 两种赔付体系，含免费旋转、Hold & Win、"
-    "级联连击、扩展 Wild 与红黑翻倍。纯静态网页，免下载免注册，移动端可玩。"
+    "级联连击、扩展 Wild、随机 Wild 投放、Cash Collect 金币收集与红黑翻倍。"
+    "纯静态网页，免下载免注册，移动端可玩。"
 )
 SITE_KEYWORDS = (
-    "在线老虎机,免费老虎机,SLOT,老虎机游戏,水果机,免费旋转,Hold and Win,级联,老虎机模拟器,"
-    "RTP,静态网页游戏,开源老虎机,Blender MCP"
+    "在线老虎机,免费老虎机,SLOT,老虎机游戏,水果机,免费旋转,Hold and Win,级联,Cash Collect,"
+    "老虎机模拟器,RTP,静态网页游戏,开源老虎机,Blender MCP"
 )
 
 
@@ -963,9 +976,9 @@ def main() -> int:
         "本文件为生成式引擎（AI 摘要 / 引用）准备的事实清单，内容与页面正文一致。",
         "",
         "## 关键事实",
-        "- 机台数量：5 款（幸运水果 / 糖果狂欢 / 龙宫探宝 / 法老之墓 / 星际远征）",
+        f"- 机台数量：{len(games)} 款（{' / '.join(names[g['id']] for g in games)}）",
         "- 部署形态：纯静态网页，无后端接口、无需注册与下载",
-        "- 引擎：5 款机台共用同一套 CONFIG 引擎；新增机台只需新增一份配置",
+        f"- 引擎：{len(games)} 款机台共用同一套 CONFIG 引擎；新增机台只需新增一份配置",
         f"- RTP：目标 96%，20 万局实测区间 {min(MEASURED_RTP.values()) * 100:.2f}% – {max(MEASURED_RTP.values()) * 100:.2f}%",
         "- 开源协议：MIT；积分保存在浏览器 localStorage，不上传服务器",
         "",
@@ -1019,7 +1032,7 @@ def main() -> int:
         out / "404.html",
         head_html(
             title="页面不存在 · SLOT 合集",
-            description="页面不存在，返回 5 款免费在线老虎机首页。",
+            description=f"页面不存在，返回 {len(games)} 款免费在线老虎机首页。",
             keywords=SITE_KEYWORDS,
             canonical=f"{site_url}/404.html",
             og_image=f"{site_url}/assets/og-image.png",
@@ -1027,7 +1040,7 @@ def main() -> int:
         )
         + header_html("", games, site_url)
         + '<main id="main" class="wrap"><article><header class="hero">'
-        + "<h1>404 · 页面不存在</h1><p>你访问的地址可能已移动。下面是可直接游玩的 5 款机台：</p></header>"
+        + f"<h1>404 · 页面不存在</h1><p>你访问的地址可能已移动。下面是可直接游玩的 {len(games)} 款机台：</p></header>"
         + cards_html(games)
         + f'<p><a class="skip-link" href="{site_url}/index.html" style="position:static;display:inline-block">返回首页</a></p>'
         + "</article></main>"

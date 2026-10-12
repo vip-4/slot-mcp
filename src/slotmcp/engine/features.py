@@ -17,7 +17,57 @@ __all__ = [
     "count_symbols",
     "expand_wild_reels",
     "cascade_collapse",
+    "place_random_wilds",
+    "collect_coins",
 ]
+
+
+def place_random_wilds(
+    grid: Grid,
+    symbol_id: str,
+    count: int,
+    rng: SlotRNG,
+    exclude_reels: Sequence[int] = (),
+    protected_symbols: Sequence[str] = (),
+) -> List[Position]:
+    """在网格中随机挑选 `count` 个可覆盖位置替换为 Wild。
+
+    * 只覆盖普通位置：已经是 Wild、以及 `protected_symbols`（Scatter / 币值 / 奖池）不覆盖
+    * 位置采样用 Fisher-Yates 洗牌，保证均匀且与两端引擎可复现
+    """
+    if count <= 0:
+        return []
+    protected = set(protected_symbols or ())
+    protected.add(symbol_id)
+    skipped = set(int(r) for r in exclude_reels or ())
+    candidates = [
+        (reel_idx, row)
+        for reel_idx, column in enumerate(grid)
+        if reel_idx not in skipped
+        for row, sym in enumerate(column)
+        if sym not in protected
+    ]
+    n = min(count, len(candidates))
+    if n <= 0:
+        return []
+    for i in range(len(candidates) - 1, 0, -1):  # Fisher-Yates，与 JS 端一致
+        j = rng.int_below(i + 1)
+        candidates[i], candidates[j] = candidates[j], candidates[i]
+    picked = candidates[:n]
+    for reel_idx, row in picked:
+        grid[reel_idx][row] = symbol_id
+    return sorted(picked)
+
+
+def collect_coins(grid: Grid, coin_symbols: Sequence[str]) -> List[Position]:
+    """返回网格中所有币值符号的位置（按轴、行升序），用于 Cash Collect 结算。"""
+    wanted = set(coin_symbols)
+    return [
+        (reel_idx, row)
+        for reel_idx, column in enumerate(grid)
+        for row, sym in enumerate(column)
+        if sym in wanted
+    ]
 
 
 def collect_positions(grid: Grid, symbol_ids: Sequence[str]) -> List[Position]:

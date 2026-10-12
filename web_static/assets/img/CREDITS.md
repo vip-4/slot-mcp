@@ -9,6 +9,8 @@
 | candy_carnival | og | Levent Yucelman | https://www.pexels.com/photo/colorful-candies-on-a-table-16365469/ | Pexels License（可免费商用，无需署名但建议署名） |
 | dragon_palace | hero | 柳树 无 | https://www.pexels.com/photo/traditional-chinese-temple-in-quanzhou-fujian-38109113/ | Pexels License（可免费商用，无需署名但建议署名） |
 | dragon_palace | og | 柳树 无 | https://www.pexels.com/photo/traditional-chinese-temple-in-quanzhou-fujian-38109113/ | Pexels License（可免费商用，无需署名但建议署名） |
+| fortune_koi | hero | Dmitry Kharitonov | https://www.pexels.com/photo/group-of-koi-fish-in-a-pond-20099418/ | Pexels License（可免费商用，无需署名但建议署名） |
+| fortune_koi | og | Dmitry Kharitonov | https://www.pexels.com/photo/group-of-koi-fish-in-a-pond-20099418/ | Pexels License（可免费商用，无需署名但建议署名） |
 | lucky_fruits | hero | Pavel Danilyuk | https://www.pexels.com/photo/men-sitting-in-front-of-a-slot-machine-7594264/ | Pexels License（可免费商用，无需署名但建议署名） |
 | lucky_fruits | og | Pavel Danilyuk | https://www.pexels.com/photo/men-sitting-in-front-of-a-slot-machine-7594264/ | Pexels License（可免费商用，无需署名但建议署名） |
 | pharaoh_tomb | hero | Mauricio Artieda | https://www.pexels.com/photo/sculpture-and-carvings-in-ancient-tomb-in-egypt-17447963/ | Pexels License（可免费商用，无需署名但建议署名） |

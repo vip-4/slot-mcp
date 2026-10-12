@@ -141,6 +141,74 @@
     return out;
   }
 
+  // 随机 Wild 投放与 Python 端 place_random_wilds 完全同构（含 RNG 消耗顺序）
+  function placeRandomWilds(grid, symbolId, count, rng, excludeReels, protectedSymbols) {
+    if (count <= 0) return [];
+    var protectedSet = {};
+    (protectedSymbols || []).forEach(function (s) {
+      protectedSet[s] = true;
+    });
+    protectedSet[symbolId] = true;
+    var skipped = {};
+    (excludeReels || []).forEach(function (r) {
+      skipped[r] = true;
+    });
+    var candidates = [];
+    for (var reel = 0; reel < grid.length; reel++) {
+      if (skipped[reel]) continue;
+      for (var row = 0; row < grid[reel].length; row++) {
+        if (!protectedSet[grid[reel][row]]) candidates.push([reel, row]);
+      }
+    }
+    var n = Math.min(count, candidates.length);
+    if (n <= 0) return [];
+    for (var i = candidates.length - 1; i > 0; i--) {
+      var j = rng.intBelow(i + 1);
+      var tmp = candidates[i];
+      candidates[i] = candidates[j];
+      candidates[j] = tmp;
+    }
+    var picked = candidates.slice(0, n);
+    picked.forEach(function (p) {
+      grid[p[0]][p[1]] = symbolId;
+    });
+    return picked.sort(function (a, b) {
+      return a[0] - b[0] || a[1] - b[1];
+    });
+  }
+
+  // Cash Collect：与 Python 端 _collect_award 同构（不含 RNG）
+  function collectAward(cfg, phase, ctx, grid) {
+    var col = cfg.features.collect;
+    if (!col || !col.enabled) return null;
+    var has = false;
+    for (var r = 0; r < grid.length && !has; r++) {
+      if (grid[r].indexOf(col.collector) >= 0) has = true;
+    }
+    if (!has) return null;
+    var coins = collectPositions(grid, col.coin_symbols);
+    if (!coins.length) return null;
+    var multiplier = phase === PHASE_FREE ? col.free_award_multiplier : col.award_multiplier;
+    var pot = 0;
+    var jackpot = false;
+    coins.forEach(function (p) {
+      var sym = grid[p[0]][p[1]];
+      pot += col.coin_values[sym] || 0;
+      if (col.jackpot_symbol && sym === col.jackpot_symbol) jackpot = true;
+    });
+    if (jackpot) pot += col.jackpot_value || 0;
+    if (pot <= 0) return null;
+    return {
+      kind: 'collect',
+      symbol: col.collector,
+      count: coins.length,
+      positions: coins,
+      baseAmount: Math.round(pot * ctx.totalBet * 1e6) / 1e6,
+      amount: Math.round(pot * multiplier * ctx.totalBet * 1e6) / 1e6,
+      label: '收集 ' + coins.length + ' 枚金币 ×' + multiplier
+    };
+  }
+
   // ------------------------------------------------------------------ 条带
   function buildStrips(cfg, name) {
     var rs = cfg.reel_sets[name];
@@ -161,7 +229,9 @@
         var wmap = rs.weights[i];
         virtual = [];
         for (var k = 0; k < strip.length; k++) {
-          var n = Math.max(1, parseInt(wmap[strip[k]] || 1, 10));
+          // 与 Python 端一致：权重 <= 0 表示该符号不在该轴出现
+          var n = parseInt(wmap[strip[k]] || 1, 10);
+          if (!(n > 0)) continue;
           for (var m = 0; m < n; m++) virtual.push(strip[k]);
         }
         while (virtual.length < rows) virtual = virtual.concat(virtual);
@@ -503,6 +573,39 @@
     var grid = rolled.grid;
     var stops = rolled.stops;
 
+    // 随机 Wild 投放：顺序与 Python 一致（替代计算前、触发判定前）
+    var rw = cfg.features.random_wild;
+    if (rw && rw.enabled && (rw.phases || ['base']).indexOf(st.phase) >= 0) {
+      var keys = Object.keys(rw.counts).map(Number).sort(function (a, b) {
+        return a - b;
+      });
+      var total = 0;
+      keys.forEach(function (k) {
+        total += rw.counts[k];
+      });
+      if (total > 0) {
+        var target = this.rng.random() * total;
+        var chosen = keys[keys.length - 1];
+        var acc = 0;
+        for (var ki = 0; ki < keys.length; ki++) {
+          acc += rw.counts[keys[ki]];
+          if (target < acc) {
+            chosen = keys[ki];
+            break;
+          }
+        }
+        var placed = placeRandomWilds(grid, rw.symbol, chosen, this.rng, rw.exclude_reels, rw.protected_symbols);
+        if (placed.length) {
+          stepEvents.push({
+            type: 'random_wild',
+            symbol: rw.symbol,
+            count: placed.length,
+            positions: placed
+          });
+        }
+      }
+    }
+
     var ew = cfg.features.expanding_wild;
     if (ew && st.phase === PHASE_BASE) {
       var targets = (ew.reels && ew.reels.length ? ew.reels : Object.keys(grid).map(Number)).map(Number);
@@ -571,6 +674,20 @@
     while (true) {
       var multiplier = st.fsMultiplier * st.cascadeMultiplier;
       var wins = evaluateGrid(cfg, grid, ctx, multiplier);
+      var events = guard === 0 ? (extraEvents || []).slice() : [];
+      // Cash Collect 只对「新鲜网格」结算：级联派生网格会让同一枚币被重复收取
+      if (guard === 0) {
+        var award = collectAward(cfg, st.phase, ctx, grid);
+        if (award) {
+          wins.push(award);
+          events.push({
+            type: 'collect',
+            collector: cfg.features.collect.collector,
+            coins: award.count,
+            amount: award.amount
+          });
+        }
+      }
       var stepWin = 0;
       wins.forEach(function (w) {
         stepWin += w.amount;
@@ -586,7 +703,7 @@
         multiplier: multiplier,
         freeSpinRemaining: st.freeSpinsLeft,
         isFresh: guard === 0,
-        events: guard === 0 ? (extraEvents || []).slice() : []
+        events: events
       });
 
       if (!cascade || !cascade.enabled || stepWin <= 0) break;

@@ -1,4 +1,4 @@
-"""CONFIG 引擎：五款多主题机台共用的一套配置模型。
+"""CONFIG 引擎：六款多主题机台共用的一套配置模型。
 
 设计要点
 --------
@@ -38,6 +38,8 @@ __all__ = [
     "CascadeConfig",
     "ExpandingWildConfig",
     "GambleConfig",
+    "RandomWildConfig",
+    "CollectConfig",
     "Features",
     "MathModel",
     "Theme",
@@ -158,7 +160,12 @@ class ReelSet:
             weight_map = self.weights[idx]
             virtual: List[str] = []
             for sym_id in strip:
-                virtual.extend([sym_id] * max(1, int(weight_map.get(sym_id, 1))))
+                # 权重 <= 0 表示该符号在该轴不出现（此前 max(1, ...) 会把 0 当成 1，
+                # 导致「某轴禁用某符号」的配置失效——新机台的稀有币正是依赖这一点）
+                weight = int(weight_map.get(sym_id, 1))
+                if weight <= 0:
+                    continue
+                virtual.extend([sym_id] * weight)
             out.append(virtual)
         return [s if len(s) >= rows else s * (rows // max(1, len(s)) + 1) for s in out]
 
@@ -343,6 +350,89 @@ class ExpandingWildConfig:
 
 
 @dataclass
+class RandomWildConfig:
+    """随机 Wild 投放：每次「新鲜网格」生成后按权重投放 N 个 Wild。
+
+    热门机台（如各类 Random Wild / Wild Storm）的通用做法：
+    基础 game 里低频投放、免费旋转里高频投放，用同一份配置表达。
+    """
+
+    enabled: bool = False
+    symbol: str = "wild"
+    # 投放个数 -> 权重（{0: 0.8, 1: 0.15, 2: 0.05} 表示 80% 不放、15% 放 1 个、5% 放 2 个）
+    counts: Dict[int, float] = field(default_factory=dict)
+    phases: List[str] = field(default_factory=lambda: ["base"])  # base / free_spins
+    exclude_reels: List[int] = field(default_factory=list)
+    # 不覆盖这些符号（Scatter / 币值 / 奖池落点应保持原样）
+    protected_symbols: List[str] = field(default_factory=list)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "enabled": self.enabled,
+            "symbol": self.symbol,
+            "counts": {str(k): v for k, v in self.counts.items()},
+            "phases": list(self.phases),
+            "exclude_reels": list(self.exclude_reels),
+            "protected_symbols": list(self.protected_symbols),
+        }
+
+    @staticmethod
+    def from_dict(d: Dict[str, Any]) -> "RandomWildConfig":
+        return RandomWildConfig(
+            enabled=bool(d.get("enabled", False)),
+            symbol=d.get("symbol", "wild"),
+            counts={int(k): float(v) for k, v in (d.get("counts") or {}).items()},
+            phases=list(d.get("phases", ["base"])),
+            exclude_reels=list(d.get("exclude_reels", [])),
+            protected_symbols=list(d.get("protected_symbols", [])),
+        )
+
+
+@dataclass
+class CollectConfig:
+    """Cash Collect（收钱）：屏上同时出现「收集者」与「币值符号」时，
+    收集者把全部币值一次性收入囊中。
+
+    币值符号的金额以**总注倍数**计（与 Hold & Win 赏金同一约定），
+    `free_award_multiplier` 用于免费旋转里提高收集倍率。
+    """
+
+    enabled: bool = False
+    collector: str = "collect"  # 收集者符号（通常为 Wild，同时具备替代功能）
+    coin_symbols: List[str] = field(default_factory=list)  # 币值符号（kind=bonus）
+    coin_values: Dict[str, float] = field(default_factory=dict)  # 符号 -> 总注倍数
+    award_multiplier: float = 1.0  # 基础 game 收集倍率
+    free_award_multiplier: float = 1.0  # 免费旋转收集倍率
+    jackpot_symbol: str = ""  # 稀有币：同时被收集时额外派奖
+    jackpot_value: float = 0.0
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "enabled": self.enabled,
+            "collector": self.collector,
+            "coin_symbols": list(self.coin_symbols),
+            "coin_values": dict(self.coin_values),
+            "award_multiplier": self.award_multiplier,
+            "free_award_multiplier": self.free_award_multiplier,
+            "jackpot_symbol": self.jackpot_symbol,
+            "jackpot_value": self.jackpot_value,
+        }
+
+    @staticmethod
+    def from_dict(d: Dict[str, Any]) -> "CollectConfig":
+        return CollectConfig(
+            enabled=bool(d.get("enabled", False)),
+            collector=d.get("collector", "collect"),
+            coin_symbols=list(d.get("coin_symbols", [])),
+            coin_values={k: float(v) for k, v in (d.get("coin_values") or {}).items()},
+            award_multiplier=float(d.get("award_multiplier", 1.0)),
+            free_award_multiplier=float(d.get("free_award_multiplier", 1.0)),
+            jackpot_symbol=d.get("jackpot_symbol", ""),
+            jackpot_value=float(d.get("jackpot_value", 0.0)),
+        )
+
+
+@dataclass
 class GambleConfig:
     enabled: bool = False
     max_steps: int = 5
@@ -376,6 +466,8 @@ class Features:
     cascade: Optional[CascadeConfig] = None
     expanding_wild: Optional[ExpandingWildConfig] = None
     gamble: Optional[GambleConfig] = None
+    random_wild: Optional[RandomWildConfig] = None
+    collect: Optional[CollectConfig] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -384,6 +476,8 @@ class Features:
             "cascade": self.cascade.to_dict() if self.cascade else None,
             "expanding_wild": self.expanding_wild.to_dict() if self.expanding_wild else None,
             "gamble": self.gamble.to_dict() if self.gamble else None,
+            "random_wild": self.random_wild.to_dict() if self.random_wild else None,
+            "collect": self.collect.to_dict() if self.collect else None,
         }
 
     @staticmethod
@@ -396,6 +490,8 @@ class Features:
             if d.get("expanding_wild")
             else None,
             gamble=GambleConfig.from_dict(d["gamble"]) if d.get("gamble") else None,
+            random_wild=RandomWildConfig.from_dict(d["random_wild"]) if d.get("random_wild") else None,
+            collect=CollectConfig.from_dict(d["collect"]) if d.get("collect") else None,
         )
 
 
@@ -671,6 +767,42 @@ class GameConfig:
                 errors.append("hold_win.prizes / jackpots 不能含负数")
             if not hw.prize_symbols:
                 errors.append("hold_win.prize_symbols 不能为空")
+
+        rw = self.features.random_wild
+        if rw and rw.enabled:
+            if rw.symbol not in self.symbols:
+                errors.append(f"random_wild.symbol 未定义: {rw.symbol}")
+            if not rw.counts:
+                errors.append("random_wild.counts 不能为空")
+            if any(w < 0 for w in rw.counts.values()):
+                errors.append("random_wild.counts 权重不能为负")
+            if any(c < 0 or c > self.reels * self.rows for c in rw.counts):
+                errors.append("random_wild.counts 个数越界")
+            # 用字面量而非 game.PHASE_*，避免 config -> game 的循环依赖
+            for phase in rw.phases:
+                if phase not in ("base", "free_spins"):
+                    errors.append(f"random_wild.phases 非法阶段: {phase}（可选 base / free_spins）")
+            for r in rw.exclude_reels:
+                if not (0 <= r < self.reels):
+                    errors.append(f"random_wild.exclude_reels 越界: {r}")
+
+        col = self.features.collect
+        if col and col.enabled:
+            if col.collector not in self.symbols:
+                errors.append(f"collect.collector 未定义: {col.collector}")
+            if not col.coin_symbols:
+                errors.append("collect.coin_symbols 不能为空")
+            for sym_id in col.coin_symbols:
+                if sym_id not in self.symbols:
+                    errors.append(f"collect 引用未定义符号: {sym_id}")
+                if sym_id not in col.coin_values:
+                    errors.append(f"collect.coin_values 缺少 {sym_id} 的面值")
+            if any(v < 0 for v in col.coin_values.values()):
+                errors.append("collect.coin_values 不能含负数")
+            if col.award_multiplier <= 0 or col.free_award_multiplier <= 0:
+                errors.append("collect 倍率必须为正")
+            if col.jackpot_symbol and col.jackpot_symbol not in self.symbols:
+                errors.append(f"collect.jackpot_symbol 未定义: {col.jackpot_symbol}")
 
         ew = self.features.expanding_wild
         if ew:

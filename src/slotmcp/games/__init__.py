@@ -1,4 +1,4 @@
-"""内置 5 款 SLOT 机台。
+"""内置 6 款 SLOT 机台。
 
 新增机台只需两步：
 1. 在本包下新建 `<game_id>.py`，实现 `build_config() -> GameConfig`（可导出 `CONFIG`）；
@@ -13,7 +13,14 @@ from typing import Callable, Dict, Iterator, List
 
 from ..engine.config import GameConfig
 
-from . import candy_carnival, dragon_palace, lucky_fruits, pharaoh_tomb, star_expedition
+from . import (
+    candy_carnival,
+    dragon_palace,
+    fortune_koi,
+    lucky_fruits,
+    pharaoh_tomb,
+    star_expedition,
+)
 
 __all__ = [
     "build_config",
@@ -23,6 +30,7 @@ __all__ = [
     "export_config_json",
     "candy_carnival",
     "dragon_palace",
+    "fortune_koi",
     "lucky_fruits",
     "pharaoh_tomb",
     "star_expedition",
@@ -34,6 +42,7 @@ _BUILDERS: Dict[str, Callable[[], GameConfig]] = {
     dragon_palace.GAME_ID: dragon_palace.build_config,
     pharaoh_tomb.GAME_ID: pharaoh_tomb.build_config,
     star_expedition.GAME_ID: star_expedition.build_config,
+    fortune_koi.GAME_ID: fortune_koi.build_config,
 }
 
 

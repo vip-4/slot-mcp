@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "blender-slot-mcp"
 version = "1.0.0"
-description = "在 Blender MCP 框架中扩展的 SLOT 游戏合集：一套共用 CONFIG 引擎驱动 5 款多主题机台"
+description = "在 Blender MCP 框架中扩展的 SLOT 游戏合集：一套共用 CONFIG 引擎驱动 6 款多主题机台"
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }

@@ -8,4 +8,8 @@ venv/
 .env
 configs/
 *.log
+# 外部服务凭证（AgentMail / cron-job.org / PlayCanvas）：只放本地，绝不入库
+deploy/services.json
+deploy/services.local.json
+*.local.json
 .DS_Store

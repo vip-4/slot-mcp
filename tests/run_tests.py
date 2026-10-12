@@ -1,4 +1,4 @@
-"""一键跑通全部自测（引擎 / MCP / Blender 桥接 / Web UI）。
+"""一键跑通全部自测（引擎 / MCP / Blender 桥接 / Web UI / 静态站 / 外部服务）。
 
     python tests/run_tests.py            # 全部
     python tests/run_tests.py engine mcp # 只跑指定模块
@@ -10,7 +10,7 @@ import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-SUITES = ["engine", "mcp", "bridge", "ui"]
+SUITES = ["engine", "mcp", "bridge", "ui", "static_site", "services"]
 
 
 def run(suite: str) -> int:

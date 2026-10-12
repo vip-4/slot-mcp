@@ -213,5 +213,22 @@ python -m http.server 8080 --directory static   # 打开 http://127.0.0.1:8080
 * **主线程约束**：Blender 侧所有改数据的操作都在主线程（`bpy.app.timers`）执行
 * **静态站一致性**：`tests/test_static_site.py` 校验导出配置可校验、条带带 `expanded`、六类 meta/JSON-LD 齐全、内链无 404（配合本地 HTTP 冒烟）
 
+## 9. 部署运维（邮件 / 定时任务 / 三维同步）
+
+```bash
+python -m slotmcp.tools.deploy_ops --all          # 巡检 + 定时任务 + 三维同步 + 邮件报告
+python -m slotmcp.tools.deploy_ops --all --dry-run # 只打印计划动作
+```
+
+| 服务 | 用途 | 关键点 |
+| --- | --- | --- |
+| AgentMail | 部署报告 / 健康告警邮件 | Base `https://api.agentmail.to`（无 /v1）；`POST /inboxes/{inbox}/messages/send` |
+| cron-job.org | 站点可用性巡检（每 30 分钟） | 创建用 `PUT /jobs`；按标题幂等 upsert；站点未上线时创建为停用以降噪 |
+| PlayCanvas | 三维机台场景同步 | `GET /projects/{id}/scenes|assets`；项目详情 403 时降级不抛异常；`--sync-scene` 导出 `deploy/playcanvas_scene.json` |
+
+凭证只从环境变量或 `deploy/services.local.json`（已 gitignore）读取，绝不入库。
+详见 `docs/DEPLOY_OPS.md`。
+
 更多细节见 `docs/REQUIREMENTS.md`（需求说明）、`docs/ARCHITECTURE.md`（架构）、
-`docs/MCP_INTEGRATION.md`（MCP 与 Blender 通信）、`docs/STATIC_SITE.md`（静态站与 SEO/GEO）。
+`docs/MCP_INTEGRATION.md`（MCP 与 Blender 通信）、`docs/STATIC_SITE.md`（静态站与 SEO/GEO）、
+`docs/DEPLOY_OPS.md`（邮件 / 定时任务 / PlayCanvas 运维）。

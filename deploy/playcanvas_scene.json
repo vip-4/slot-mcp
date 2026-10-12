@@ -1,0 +1,439 @@
+{
+  "schema": "slotmcp.scene/1",
+  "project_id": 1583126,
+  "scene": "Main Scene",
+  "animation": {
+    "spin_ms": 420,
+    "cascade_ms": 340,
+    "hold_win_ms": 620,
+    "stop_stagger_ms": 90,
+    "easing": "easeOutCubic"
+  },
+  "machines": [
+    {
+      "id": "candy_carnival",
+      "name": "糖果狂欢",
+      "reels": 5,
+      "rows": 3,
+      "pay_mode": "lines",
+      "theme": {
+        "id": "candy",
+        "name": "糖果乐园",
+        "palette": {
+          "grid": "#3d1039",
+          "reel": "#64246b",
+          "win": "#ffd6e8"
+        },
+        "cabinet_color": "#ff6f91",
+        "background": "#2a0c2b",
+        "accent": "#ffe066",
+        "music": ""
+      },
+      "symbols": [
+        {
+          "id": "lollipop",
+          "name": "棒棒糖",
+          "kind": "standard",
+          "color": "#ff8ab5",
+          "glyph": "🍭"
+        },
+        {
+          "id": "candy",
+          "name": "软糖",
+          "kind": "standard",
+          "color": "#9be7ff",
+          "glyph": "🍬"
+        },
+        {
+          "id": "donut",
+          "name": "甜甜圈",
+          "kind": "standard",
+          "color": "#ffb27a",
+          "glyph": "🍩"
+        },
+        {
+          "id": "choco",
+          "name": "巧克力",
+          "kind": "standard",
+          "color": "#a9714b",
+          "glyph": "🍫"
+        },
+        {
+          "id": "cake",
+          "name": "纸杯蛋糕",
+          "kind": "standard",
+          "color": "#ffd6e8",
+          "glyph": "🍰"
+        },
+        {
+          "id": "gift",
+          "name": "礼物盒",
+          "kind": "standard",
+          "color": "#ffe066",
+          "glyph": "🎁"
+        },
+        {
+          "id": "wild",
+          "name": "彩虹 Wild",
+          "kind": "wild",
+          "color": "#ffffff",
+          "glyph": "🌈"
+        },
+        {
+          "id": "scatter",
+          "name": "糖果杯 Scatter",
+          "kind": "scatter",
+          "color": "#ff70a6",
+          "glyph": "🧁"
+        }
+      ],
+      "features": [
+        "cascade",
+        "expanding_wild",
+        "free_spins",
+        "gamble",
+        "hold_win"
+      ]
+    },
+    {
+      "id": "dragon_palace",
+      "name": "龙宫探宝",
+      "reels": 5,
+      "rows": 4,
+      "pay_mode": "lines",
+      "theme": {
+        "id": "dragon",
+        "name": "深海龙宫",
+        "palette": {
+          "grid": "#062a35",
+          "reel": "#0b4a55",
+          "win": "#ffe98a"
+        },
+        "cabinet_color": "#0f3d3e",
+        "background": "#04131c",
+        "accent": "#ffc857",
+        "music": ""
+      },
+      "symbols": [
+        {
+          "id": "lantern",
+          "name": "宫灯",
+          "kind": "standard",
+          "color": "#ff7b54",
+          "glyph": "🏮"
+        },
+        {
+          "id": "coin",
+          "name": "铜钱",
+          "kind": "standard",
+          "color": "#ffd166",
+          "glyph": "🪙"
+        },
+        {
+          "id": "lotus",
+          "name": "莲花",
+          "kind": "standard",
+          "color": "#ff9ecd",
+          "glyph": "🌸"
+        },
+        {
+          "id": "goldbar",
+          "name": "金锭",
+          "kind": "standard",
+          "color": "#ffe7a3",
+          "glyph": "💰"
+        },
+        {
+          "id": "dragon_eye",
+          "name": "龙瞳",
+          "kind": "standard",
+          "color": "#8ef0ff",
+          "glyph": "🐲"
+        },
+        {
+          "id": "wild",
+          "name": "神龙 Wild",
+          "kind": "wild",
+          "color": "#7cf6c8",
+          "glyph": "🐉"
+        },
+        {
+          "id": "scatter",
+          "name": "龙宫 Scatter",
+          "kind": "scatter",
+          "color": "#c792ff",
+          "glyph": "🏯"
+        }
+      ],
+      "features": [
+        "cascade",
+        "expanding_wild",
+        "free_spins",
+        "gamble",
+        "hold_win"
+      ]
+    },
+    {
+      "id": "lucky_fruits",
+      "name": "幸运水果机",
+      "reels": 3,
+      "rows": 3,
+      "pay_mode": "lines",
+      "theme": {
+        "id": "retro_fruit",
+        "name": "复古水果",
+        "palette": {
+          "grid": "#2a0a10",
+          "reel": "#3d1420",
+          "win": "#ffe98a"
+        },
+        "cabinet_color": "#7a1220",
+        "background": "#20060a",
+        "accent": "#ffcc33",
+        "music": ""
+      },
+      "symbols": [
+        {
+          "id": "cherry",
+          "name": "樱桃",
+          "kind": "standard",
+          "color": "#ff5570",
+          "glyph": "🍒"
+        },
+        {
+          "id": "lemon",
+          "name": "柠檬",
+          "kind": "standard",
+          "color": "#ffe45c",
+          "glyph": "🍋"
+        },
+        {
+          "id": "watermelon",
+          "name": "西瓜",
+          "kind": "standard",
+          "color": "#5ad07a",
+          "glyph": "🍉"
+        },
+        {
+          "id": "plum",
+          "name": "李子",
+          "kind": "standard",
+          "color": "#b57cff",
+          "glyph": "🍇"
+        },
+        {
+          "id": "bell",
+          "name": "铃铛",
+          "kind": "standard",
+          "color": "#ffd166",
+          "glyph": "🔔"
+        },
+        {
+          "id": "seven",
+          "name": "幸运 7",
+          "kind": "standard",
+          "color": "#ff8c42",
+          "glyph": "7️⃣"
+        },
+        {
+          "id": "wild",
+          "name": "幸运星 Wild",
+          "kind": "wild",
+          "color": "#fffacd",
+          "glyph": "⭐"
+        }
+      ],
+      "features": [
+        "cascade",
+        "expanding_wild",
+        "free_spins",
+        "gamble",
+        "hold_win"
+      ]
+    },
+    {
+      "id": "pharaoh_tomb",
+      "name": "法老之墓",
+      "reels": 5,
+      "rows": 3,
+      "pay_mode": "ways",
+      "theme": {
+        "id": "egypt",
+        "name": "金字塔秘境",
+        "palette": {
+          "grid": "#231a08",
+          "reel": "#3b2c0e",
+          "win": "#ffe066"
+        },
+        "cabinet_color": "#7a5c14",
+        "background": "#150f04",
+        "accent": "#ffd166",
+        "music": ""
+      },
+      "symbols": [
+        {
+          "id": "ankh",
+          "name": "生命符",
+          "kind": "standard",
+          "color": "#ffe0a3",
+          "glyph": "☥"
+        },
+        {
+          "id": "eye",
+          "name": "荷鲁斯之眼",
+          "kind": "standard",
+          "color": "#8ecbff",
+          "glyph": "👁"
+        },
+        {
+          "id": "scarab",
+          "name": "圣甲虫",
+          "kind": "standard",
+          "color": "#7cf6c8",
+          "glyph": "🪲"
+        },
+        {
+          "id": "cat",
+          "name": "巴斯特猫",
+          "kind": "standard",
+          "color": "#ffb3c7",
+          "glyph": "🐈"
+        },
+        {
+          "id": "pharaoh",
+          "name": "法老面具",
+          "kind": "standard",
+          "color": "#ffd166",
+          "glyph": "👑"
+        },
+        {
+          "id": "wild",
+          "name": "阿努比斯 Wild",
+          "kind": "wild",
+          "color": "#c792ff",
+          "glyph": "🐺"
+        },
+        {
+          "id": "coin",
+          "name": "法老金币",
+          "kind": "bonus",
+          "color": "#ffd700",
+          "glyph": "🪙"
+        },
+        {
+          "id": "mini",
+          "name": "MINI 奖池",
+          "kind": "jackpot",
+          "color": "#9be564",
+          "glyph": "🟢"
+        },
+        {
+          "id": "minor",
+          "name": "MINOR 奖池",
+          "kind": "jackpot",
+          "color": "#5ad2ff",
+          "glyph": "🔵"
+        },
+        {
+          "id": "major",
+          "name": "MAJOR 奖池",
+          "kind": "jackpot",
+          "color": "#c792ff",
+          "glyph": "🟣"
+        }
+      ],
+      "features": [
+        "cascade",
+        "expanding_wild",
+        "free_spins",
+        "gamble",
+        "hold_win"
+      ]
+    },
+    {
+      "id": "star_expedition",
+      "name": "星际远征",
+      "reels": 6,
+      "rows": 4,
+      "pay_mode": "ways",
+      "theme": {
+        "id": "space",
+        "name": "深空远征",
+        "palette": {
+          "grid": "#0a0f2b",
+          "reel": "#141f4a",
+          "win": "#9be7ff"
+        },
+        "cabinet_color": "#1b2a6b",
+        "background": "#05060f",
+        "accent": "#7cf6c8",
+        "music": ""
+      },
+      "symbols": [
+        {
+          "id": "meteor",
+          "name": "陨石",
+          "kind": "standard",
+          "color": "#c0c6d8",
+          "glyph": "☄️"
+        },
+        {
+          "id": "comet",
+          "name": "彗星",
+          "kind": "standard",
+          "color": "#9be7ff",
+          "glyph": "💫"
+        },
+        {
+          "id": "satellite",
+          "name": "卫星",
+          "kind": "standard",
+          "color": "#b7e4c7",
+          "glyph": "🛰️"
+        },
+        {
+          "id": "planet",
+          "name": "行星",
+          "kind": "standard",
+          "color": "#ffa8d8",
+          "glyph": "🪐"
+        },
+        {
+          "id": "ufo",
+          "name": "飞碟",
+          "kind": "standard",
+          "color": "#a1f0e0",
+          "glyph": "🛸"
+        },
+        {
+          "id": "rocket",
+          "name": "火箭",
+          "kind": "standard",
+          "color": "#ffb27a",
+          "glyph": "🚀"
+        },
+        {
+          "id": "wild",
+          "name": "星门 Wild",
+          "kind": "wild",
+          "color": "#ffffff",
+          "glyph": "🌟"
+        },
+        {
+          "id": "scatter",
+          "name": "黑洞 Scatter",
+          "kind": "scatter",
+          "color": "#c792ff",
+          "glyph": "🌌"
+        }
+      ],
+      "features": [
+        "cascade",
+        "expanding_wild",
+        "free_spins",
+        "gamble",
+        "hold_win"
+      ]
+    }
+  ]
+}

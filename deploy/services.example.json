@@ -1,0 +1,20 @@
+{
+  "site_url": "https://vip882.gitee.io/slot-games",
+
+  "agentmail": {
+    "inbox": "hermes-h5@agentmail.to",
+    "to": ["vip880@agentmail.to", "vip881@agentmail.to"],
+    "api_key": "填入 AgentMail API Key（或设置环境变量 AGENTMAIL_API_KEY）"
+  },
+
+  "cronjob": {
+    "interval_minutes": 30,
+    "api_key": "填入 cron-job.org API Key（或设置环境变量 CRONJOB_API_KEY）"
+  },
+
+  "playcanvas": {
+    "project_id": 1583126,
+    "scene": "Main Scene",
+    "token": "填入 PlayCanvas API Token（或设置环境变量 PLAYCANVAS_TOKEN）"
+  }
+}

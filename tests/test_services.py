@@ -13,6 +13,12 @@ sys.path.insert(0, str(ROOT / "src"))
 
 from slotmcp.services.agentmail import AgentMailClient  # noqa: E402
 from slotmcp.services.cronjob import CronJobClient, every_n_minutes  # noqa: E402
+from slotmcp.services.media import (  # noqa: E402
+    THEME_QUERIES,
+    PixabayClient,
+    PexelsClient,
+)
+from slotmcp.services.metaso import MetasoClient  # noqa: E402
 from slotmcp.services.playcanvas import PlayCanvasClient, build_scene_descriptor  # noqa: E402
 
 FAILS = 0
@@ -53,6 +59,8 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(200, {"count": 1, "inboxes": [{"inbox_id": "a@agentmail.to"}]})
         if p == "/jobs":
             return self._json(200, {"jobs": STATE["jobs"]})
+        if p == "/inboxes-meta":
+            return self._json(200, {"ok": True})
         if p.endswith("/scenes"):
             return self._json(200, {"result": [{"id": 1, "name": "Main Scene"}]})
         if p.endswith("/assets"):
@@ -64,6 +72,17 @@ class Handler(BaseHTTPRequestHandler):
     def do_POST(self):
         body = self._read()
         p = self.path
+        if p == "/search":  # Metaso
+            return self._json(
+                200,
+                {
+                    "webpages": [
+                        {"title": "本站首页", "link": "https://vip882.gitee.io/slot-games/index.html", "snippet": "五款机台"},
+                        {"title": "其它站点", "link": "https://example.com/x", "snippet": "无关"},
+                    ],
+                    "summary": "这是 AI 摘要",
+                },
+            )
         if p.endswith("/messages/send"):
             STATE["sent"].append(body)
             return self._json(200, {"message_id": "<stub>", "thread_id": "t-1"})
@@ -168,6 +187,38 @@ def main() -> int:
         check(desc["schema"] == "slotmcp.scene/1", "场景描述带 schema 版本")
         check(desc["machines"][0]["symbols"][0]["id"] == "cherry", "符号表被正确导出")
         check(desc["animation"]["spin_ms"] == 420, "动画参数进入场景描述")
+
+        print("== 图片素材（离线解析） ==")
+        pexels = PexelsClient("k")
+        item = pexels.normalize(
+            {
+                "id": 1,
+                "url": "https://www.pexels.com/photo/x/",
+                "photographer": "A",
+                "photographer_url": "https://www.pexels.com/@a",
+                "src": {"original": "https://images.pexels.com/photos/1/x.jpeg"},
+            }
+        )
+        check(item["provider"] == "pexels" and item["author"] == "A", "Pexels 结果归一化")
+        check(
+            pexels.crop(item["raw"], 1200, 630)
+            == "https://images.pexels.com/photos/1/x.jpeg?auto=compress&cs=tinysrgb&fit=crop&w=1200&h=630",
+            "Pexels 用 imgix 参数裁剪出 1200×630 OG 图",
+        )
+        pix = PixabayClient("k").normalize({"id": 2, "pageURL": "u", "user": "B", "largeImageURL": "https://cdn/x.jpg"})
+        check(pix["provider"] == "pixabay" and pix["raw"].endswith("x.jpg"), "Pixabay 结果归一化")
+        check(len(THEME_QUERIES) == 5 and all("alt" in v for v in THEME_QUERIES.values()), "5 款机台都有检索词与中文 alt")
+
+        print("== Metaso GEO 监测 ==")
+        ms = MetasoClient("k", base_url=base)
+        report = ms.site_report("https://vip882.gitee.io/slot-games", "测试")
+        check(report["indexed"] is True and report["matched"] == 1, "识别出本站命中条目")
+        check(report["total"] == 2 and report["summary"] == "这是 AI 摘要", "统计总条数与 AI 摘要")
+        bad = ms.site_report("https://other.example", "测试")
+        check(bad["indexed"] is False and bad["matched"] == 0, "未命中本站时 indexed=False")
+        broken = MetasoClient("k", base_url=f"{base}/nope")
+        err = broken.site_report("https://x.example", "测试")
+        check(err["error"] != "", "接口失败时返回结构化错误而非抛异常")
 
         print("== 报告渲染 ==")
         text = AgentMailClient.render_report(

@@ -199,7 +199,7 @@ python -m http.server 8080 --directory static   # 打开 http://127.0.0.1:8080
 
 ### 7.3 性能与可访问性
 
-* 单 CSS + 两个 `defer` 脚本，零外部请求；数据仅 37 KB JSON（可预加载）
+* 单 CSS + 两个 `defer` 脚本，零外部请求；数据仅 37 KB JSON（可预加载）；主题图为本地静态资源（每张 30–130 KB）
 * 语义化结构：`header/nav/main/article/section/footer`、`h1→h2→h3` 层级、`<table>`+`caption`+`scope`、`aria-current`
 * 可访问性：跳转链接、`aria-live` 播报中奖与特性、`role="img"+aria-label` 标注符号、键盘空格旋转、`:focus-visible` 焦点环
 * `prefers-reduced-motion` 下关闭动画与过渡
@@ -225,6 +225,8 @@ python -m slotmcp.tools.deploy_ops --all --dry-run # 只打印计划动作
 | AgentMail | 部署报告 / 健康告警邮件 | Base `https://api.agentmail.to`（无 /v1）；`POST /inboxes/{inbox}/messages/send` |
 | cron-job.org | 站点可用性巡检（每 30 分钟） | 创建用 `PUT /jobs`；按标题幂等 upsert；站点未上线时创建为停用以降噪 |
 | PlayCanvas | 三维机台场景同步 | `GET /projects/{id}/scenes|assets`；项目详情 403 时降级不抛异常；`--sync-scene` 导出 `deploy/playcanvas_scene.json` |
+| Pexels / Pixabay | 机台主题配图 | `python -m slotmcp.tools.fetch_media`；两服务都需浏览器 UA，Pexels CDN 直接裁剪 1200×630 作 OG 图；素材清单 `deploy/media.json` + 署名 `CREDITS.md` |
+| Metaso | GEO 收录与 AI 摘要监测 | `--geo`：`POST /api/v1/search`，判断 AI 搜索是否命中本站、摘要内容 |
 
 凭证只从环境变量或 `deploy/services.local.json`（已 gitignore）读取，绝不入库。
 详见 `docs/DEPLOY_OPS.md`。

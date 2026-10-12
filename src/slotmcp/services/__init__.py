@@ -1,4 +1,4 @@
-"""外部服务客户端：邮件通知、定时任务巡检、PlayCanvas 三维项目。
+"""外部服务客户端：邮件通知、定时任务巡检、PlayCanvas 三维项目、图片素材、AI 搜索监测。
 
 设计约定
 --------
@@ -11,11 +11,16 @@
 from .agentmail import AgentMailClient
 from .cronjob import CronJobClient
 from .http import request_json
+from .media import PixabayClient, PexelsClient
+from .metaso import MetasoClient
 from .playcanvas import PlayCanvasClient
 
 __all__ = [
     "AgentMailClient",
     "CronJobClient",
     "PlayCanvasClient",
+    "PixabayClient",
+    "PexelsClient",
+    "MetasoClient",
     "request_json",
 ]

@@ -61,6 +61,7 @@ class AgentMailClient:
         checks: List[Dict[str, Any]],
         cron: List[Dict[str, Any]],
         playcanvas: Dict[str, Any],
+        geo: Optional[Dict[str, Any]] = None,
     ) -> str:
         """把部署结果渲染为纯文本报告（邮件正文与控制台共用）。"""
         lines = [
@@ -91,5 +92,19 @@ class AgentMailClient:
             lines.append(f"  场景: {playcanvas.get('scenes', 0)} 个，资产: {playcanvas.get('assets', 0)} 个")
             if playcanvas.get("error"):
                 lines.append(f"  提示: {playcanvas['error']}")
+        if geo:
+            lines += [
+                "",
+                "【GEO 监测（Metaso AI 搜索）】",
+                f"  检索词: {geo.get('query', '')}",
+                f"  本站是否被收录: {'是' if geo.get('indexed') else '否'}（命中 {geo.get('matched', 0)}/{geo.get('total', 0)} 条）",
+            ]
+            if geo.get("summary"):
+                lines.append(f"  AI 摘要: {geo['summary']}")
+            for hit in (geo.get("hits") or [])[:3]:
+                mark = "*" if hit.get("own") else " "
+                lines.append(f"   [{mark}] {hit.get('title','')[:40]} - {hit.get('link','')}")
+            if geo.get("error"):
+                lines.append(f"  提示: {geo['error']}")
         lines += ["", "-- 本邮件由 slotmcp 部署流水线自动发送"]
         return "\n".join(lines)

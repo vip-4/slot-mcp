@@ -113,6 +113,9 @@ def main() -> int:
         faq = next(b for b in blocks if b.get("@type") == "FAQPage")
         check(len(faq["mainEntity"]) >= 5, f"FAQ 结构化数据条数 {len(faq['mainEntity'])}")
 
+        check('loading="lazy"' in html and 'decoding="async"' in html, "列表配图使用懒加载与异步解码")
+        check(html.count('alt="') >= 5, "配图均带 alt 替代文本（图片 SEO + 可访问性）")
+
         # 不执行 JS 即可读到的可索引事实（GEO）
         for token in ["要点速览", "机台参数对比", "术语表", "常见问题", "赔付表"]:
             check(token in html, f"静态正文包含「{token}」")
@@ -127,6 +130,14 @@ def main() -> int:
             check('rel="canonical"' in text and 'property="og:image"' in text, f"{g['id']}: canonical 与 OG 完整")
             gt = [b.get("@type") for b in jsonld_blocks(text)]
             check("SoftwareApplication" in gt and "BreadcrumbList" in gt, f"{g['id']}: JSON-LD 类型 {gt}")
+            hero = out / "assets" / "img" / f"{g['id']}-og.jpg"
+            if hero.is_file():
+                check(f'assets/img/{g["id"]}-og.jpg' in text, f"{g['id']}: og:image 指向主题图")
+                check('class="game-hero"' in text and "<figcaption" in text, f"{g['id']}: 主图带 figure + figcaption")
+                check('rel="preload" as="image"' in text, f"{g['id']}: 主图 preload（优化 LCP）")
+                app = next(b for b in jsonld_blocks(text) if b.get("@type") == "SoftwareApplication")
+                check("image" in app, f"{g['id']}: SoftwareApplication 带 image 字段")
+        check((out / "assets" / "img" / "CREDITS.md").is_file(), "存在图片署名文件 assets/img/CREDITS.md")
 
         print("== 爬虫配套 ==")
         robots = (out / "robots.txt").read_text(encoding="utf-8")

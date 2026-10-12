@@ -1,0 +1,138 @@
+{
+  "schema": "slotmcp.media/1",
+  "hero": {
+    "width": 960,
+    "height": 540
+  },
+  "og": {
+    "width": 1200,
+    "height": 630
+  },
+  "entries": [
+    {
+      "game": "candy_carnival",
+      "alt": "糖果狂欢机台主题图：彩色糖果与甜点",
+      "provider": "pexels",
+      "page_url": "https://www.pexels.com/photo/colorful-candies-on-a-table-16365469/",
+      "author": "Levent Yucelman",
+      "author_url": "https://www.pexels.com/@levent-yucelman-455905959",
+      "license": "Pexels License（可免费商用，无需署名但建议署名）",
+      "files": {
+        "hero": {
+          "path": "candy_carnival-hero.jpg",
+          "width": 960,
+          "height": 540,
+          "bytes": 31170,
+          "source": "https://images.pexels.com/photos/16365469/pexels-photo-16365469.jpeg?auto=compress&cs=tinysrgb&fit=crop&w=960&h=540"
+        },
+        "og": {
+          "path": "candy_carnival-og.jpg",
+          "width": 1200,
+          "height": 630,
+          "bytes": 42833,
+          "source": "https://images.pexels.com/photos/16365469/pexels-photo-16365469.jpeg?auto=compress&cs=tinysrgb&fit=crop&w=1200&h=630"
+        }
+      }
+    },
+    {
+      "game": "dragon_palace",
+      "alt": "龙宫探宝机台主题图：东方宫殿灯笼与龙纹装饰",
+      "provider": "pexels",
+      "page_url": "https://www.pexels.com/photo/traditional-chinese-temple-in-quanzhou-fujian-38109113/",
+      "author": "柳树 无",
+      "author_url": "https://www.pexels.com/@1116199243",
+      "license": "Pexels License（可免费商用，无需署名但建议署名）",
+      "files": {
+        "hero": {
+          "path": "dragon_palace-hero.jpg",
+          "width": 960,
+          "height": 540,
+          "bytes": 87399,
+          "source": "https://images.pexels.com/photos/38109113/pexels-photo-38109113.jpeg?auto=compress&cs=tinysrgb&fit=crop&w=960&h=540"
+        },
+        "og": {
+          "path": "dragon_palace-og.jpg",
+          "width": 1200,
+          "height": 630,
+          "bytes": 122955,
+          "source": "https://images.pexels.com/photos/38109113/pexels-photo-38109113.jpeg?auto=compress&cs=tinysrgb&fit=crop&w=1200&h=630"
+        }
+      }
+    },
+    {
+      "game": "lucky_fruits",
+      "alt": "幸运水果机台主题图：鲜艳的樱桃与水果特写",
+      "provider": "pexels",
+      "page_url": "https://www.pexels.com/photo/men-sitting-in-front-of-a-slot-machine-7594264/",
+      "author": "Pavel Danilyuk",
+      "author_url": "https://www.pexels.com/@pavel-danilyuk",
+      "license": "Pexels License（可免费商用，无需署名但建议署名）",
+      "files": {
+        "hero": {
+          "path": "lucky_fruits-hero.jpg",
+          "width": 960,
+          "height": 540,
+          "bytes": 86222,
+          "source": "https://images.pexels.com/photos/7594264/pexels-photo-7594264.jpeg?auto=compress&cs=tinysrgb&fit=crop&w=960&h=540"
+        },
+        "og": {
+          "path": "lucky_fruits-og.jpg",
+          "width": 1200,
+          "height": 630,
+          "bytes": 117152,
+          "source": "https://images.pexels.com/photos/7594264/pexels-photo-7594264.jpeg?auto=compress&cs=tinysrgb&fit=crop&w=1200&h=630"
+        }
+      }
+    },
+    {
+      "game": "pharaoh_tomb",
+      "alt": "法老之墓机台主题图：古埃及金字塔与法老雕像",
+      "provider": "pexels",
+      "page_url": "https://www.pexels.com/photo/sculpture-and-carvings-in-ancient-tomb-in-egypt-17447963/",
+      "author": "Mauricio Artieda",
+      "author_url": "https://www.pexels.com/@martieda",
+      "license": "Pexels License（可免费商用，无需署名但建议署名）",
+      "files": {
+        "hero": {
+          "path": "pharaoh_tomb-hero.jpg",
+          "width": 960,
+          "height": 540,
+          "bytes": 91100,
+          "source": "https://images.pexels.com/photos/17447963/pexels-photo-17447963.jpeg?auto=compress&cs=tinysrgb&fit=crop&w=960&h=540"
+        },
+        "og": {
+          "path": "pharaoh_tomb-og.jpg",
+          "width": 1200,
+          "height": 630,
+          "bytes": 131765,
+          "source": "https://images.pexels.com/photos/17447963/pexels-photo-17447963.jpeg?auto=compress&cs=tinysrgb&fit=crop&w=1200&h=630"
+        }
+      }
+    },
+    {
+      "game": "star_expedition",
+      "alt": "星际远征机台主题图：星系与深空星云",
+      "provider": "pexels",
+      "page_url": "https://www.pexels.com/photo/space-shuttle-launch-during-nighttime-796206/",
+      "author": "Edvin Richardson",
+      "author_url": "https://www.pexels.com/@nivdex",
+      "license": "Pexels License（可免费商用，无需署名但建议署名）",
+      "files": {
+        "hero": {
+          "path": "star_expedition-hero.jpg",
+          "width": 960,
+          "height": 540,
+          "bytes": 44320,
+          "source": "https://images.pexels.com/photos/796206/pexels-photo-796206.jpeg?auto=compress&cs=tinysrgb&fit=crop&w=960&h=540"
+        },
+        "og": {
+          "path": "star_expedition-og.jpg",
+          "width": 1200,
+          "height": 630,
+          "bytes": 73938,
+          "source": "https://images.pexels.com/photos/796206/pexels-photo-796206.jpeg?auto=compress&cs=tinysrgb&fit=crop&w=1200&h=630"
+        }
+      }
+    }
+  ]
+}

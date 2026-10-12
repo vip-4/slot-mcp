@@ -210,6 +210,24 @@ def paytable_html(cfg) -> str:
     )
 
 
+def load_media() -> Dict[str, Dict[str, Any]]:
+    """读取 `deploy/media.json`（由 tools/fetch_media.py 生成）中的图片素材条目。"""
+    path = ROOT / "deploy" / "media.json"
+    if not path.is_file():
+        return {}
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except ValueError:
+        return {}
+    return {e["game"]: e for e in payload.get("entries", [])}
+
+
+def media_image(entry: Optional[Dict[str, Any]], kind: str) -> Optional[Dict[str, Any]]:
+    if not entry:
+        return None
+    return (entry.get("files") or {}).get(kind)
+
+
 def jsonld(blocks: List[Dict[str, Any]]) -> str:
     return '<script type="application/ld+json">\n' + json.dumps(blocks, ensure_ascii=False, indent=2) + "\n</script>"
 
@@ -226,7 +244,10 @@ def head_html(
     og_type: str = "website",
     body_class: str = "",
     prefix: str = "",
+    preload_image: str = "",
+    og_image_alt: str = "",
 ) -> str:
+    image_alt = og_image_alt or SITE_TAGLINE
     site_url = canonical.rsplit("/", 1)[0] if canonical.endswith(".html") else canonical
     return f"""<!DOCTYPE html>
 <html lang="zh-CN">
@@ -252,13 +273,14 @@ def head_html(
 <meta property="og:image" content="{og_image}">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="{escape(SITE_TAGLINE)}">
+<meta property="og:image:alt" content="{escape(image_alt)}">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="{escape(title)}">
 <meta name="twitter:description" content="{escape(description)}">
 <meta name="twitter:image" content="{og_image}">
-<meta name="twitter:image:alt" content="{escape(SITE_TAGLINE)}">
+<meta name="twitter:image:alt" content="{escape(image_alt)}">
 <link rel="preload" href="{prefix}data/games.json" as="fetch" crossorigin="anonymous">
+{f'<link rel="preload" as="image" href="{prefix}{preload_image}" fetchpriority="high">' if preload_image else ''}
 <link rel="stylesheet" href="{prefix}assets/styles.css">
 {jsonld(jsonld_blocks)}
 </head>
@@ -298,6 +320,7 @@ def footer_html(site_url: str = "", prefix: str = "") -> str:
       <li><a href="{prefix}sitemap.xml">站点地图</a></li>
       <li><a href="{prefix}llms.txt">AI 摘要（llms.txt）</a></li>
       <li><a href="{prefix}robots.txt">robots.txt</a></li>
+      <li><a href="{prefix}assets/img/CREDITS.md">图片署名</a></li>
     </ul>
     <p class="small">免责声明：本站为面向成年人的休闲娱乐与技术演示项目，使用虚拟积分，不涉及真实货币投注、充值或兑奖。</p>
     <p class="small">最后更新：<time datetime="{BUILD_DATE}">{BUILD_DATE}</time></p>
@@ -384,8 +407,16 @@ def cards_html(games: List[Dict[str, Any]]) -> str:
     out = []
     for g in games:
         feats = "".join(f"<span>{escape(f)}</span>" for f in g["features"]) or "<span>基础赔付</span>"
+        img = media_image(g.get("media"), "hero")
+        img_html = (
+            f'<img class="card-img" src="assets/img/{img["path"]}" width="{img["width"]}" '
+            f'height="{img["height"]}" loading="lazy" decoding="async" alt="{escape(g["media"].get("alt", "")) or escape(g["name"]) + " 主题配图"}">'
+            if img
+            else ""
+        )
         out.append(
             f"""<li class="card">
+  {img_html}
   <h3><a href="games/{g['id']}.html">{escape(g['name'])}</a></h3>
   <p class="meta"><span>{g['grid']}</span><span>{escape(g['pay_mode'])}</span>
   <span>波动 {escape(g['volatility'])}</span><span>目标 RTP {g['rtp']}%</span></p>
@@ -526,6 +557,9 @@ def build_index(games: List[Dict[str, Any]], site_url: str) -> str:
 def build_game_page(g: Dict[str, Any], games: List[Dict[str, Any]], site_url: str) -> str:
     cfg = g["cfg"]
     url = f"{site_url}/games/{g['id']}.html"
+    og_img = media_image(g.get("media"), "og")
+    hero_img = media_image(g.get("media"), "hero")
+    og_url = f"{site_url}/assets/img/{og_img['path']}" if og_img else f"{site_url}/assets/og-image.png"
     title = f"{g['name']}｜{g['grid']} {g['pay_mode']} 免费在线老虎机"
     desc = f"{g['name']}：{g['grid']} 网格、{g['pay_mode']}，{g['summary']}目标 RTP {g['rtp']}%，纯静态网页免下载即玩。"
     blocks = [
@@ -558,6 +592,8 @@ def build_game_page(g: Dict[str, Any], games: List[Dict[str, Any]], site_url: st
             "offers": {"@type": "Offer", "price": "0", "priceCurrency": "USD"},
             "featureList": g["features"] or ["基础赔付"],
             "description": desc,
+            "image": og_url,
+            "screenshot": {"@type": "ImageObject", "url": og_url, "caption": g["name"] + " 主题配图"},
         },
         {
             "@context": "https://schema.org",
@@ -573,12 +609,34 @@ def build_game_page(g: Dict[str, Any], games: List[Dict[str, Any]], site_url: st
         description=desc,
         keywords=f"{g['name']},免费老虎机,在线老虎机,{g['pay_mode']},RTP,SLOT,{SITE_KEYWORDS}",
         canonical=url,
-        og_image=f"{site_url}/assets/og-image.png",
+        og_image=og_url,
         jsonld_blocks=blocks,
         body_class=f"game-{g['id']}",
         prefix="../",
+        preload_image=f"assets/img/{hero_img['path']}" if hero_img else "",
+        og_image_alt=(g["media"].get("alt") if g.get("media") else "") or f"{g['name']} 主题配图",
     )
     feats = "".join(f"<li>{escape(f)}</li>" for f in g["features"]) or "<li>基础赔付</li>"
+    # 主图：显式 width/height 防 CLS，fetchpriority 提升 LCP，figcaption 提供可索引的文本说明
+    if hero_img:
+        alt = g["media"].get("alt") or f"{g['name']} 主题配图"
+        credit = " · ".join(
+            x
+            for x in [
+                f"来源 {g['media'].get('provider', '')}",
+                g["media"].get("author", ""),
+                g["media"].get("license", ""),
+            ]
+            if x
+        )
+        figure = (
+            f'<figure class="game-hero">'
+            f'<img src="../assets/img/{hero_img["path"]}" width="{hero_img["width"]}" '
+            f'height="{hero_img["height"]}" alt="{escape(alt)}" fetchpriority="high" decoding="async">'
+            f'<figcaption>{escape(alt)}（{escape(credit)}）</figcaption></figure>'
+        )
+    else:
+        figure = ""
     symbols = "".join(
         f'<tr><th scope="row"><span class="sym" style="--sym:{s.color}">{s.glyph}</span>{escape(s.name)}</th>'
         f"<td>{escape({'standard': '标准符号', 'wild': 'Wild 百搭', 'scatter': 'Scatter 散落', 'bonus': 'BONUS 赏金', 'jackpot': '奖池符号'}.get(s.kind.value, s.kind.value))}</td>"
@@ -600,6 +658,8 @@ def build_game_page(g: Dict[str, Any], games: List[Dict[str, Any]], site_url: st
       <li>适合：{escape(g['best_for'])}。</li>
     </ul>
   </header>
+
+  {figure}
 
   {cabinet_html(games, g['id'])}
 
@@ -750,6 +810,7 @@ SITE_KEYWORDS = (
 
 def collect_games() -> List[Dict[str, Any]]:
     registry = get_registry()
+    media = load_media()
     games = []
     for gid in registry.ids():
         machine = registry.get(gid)
@@ -771,6 +832,7 @@ def collect_games() -> List[Dict[str, Any]]:
                 "features": feats,
                 "summary": copy.get("summary", cfg.description),
                 "best_for": copy.get("best_for", "所有玩家"),
+                "media": media.get(gid),
                 "feature_note": (
                     "特性参数（触发个数、赠送次数、倍率曲线、重转次数、赏金与奖池）"
                     "全部写在配置里，可通过 MCP 工具 slot_set_parameter 热更新，无需改动引擎代码。"

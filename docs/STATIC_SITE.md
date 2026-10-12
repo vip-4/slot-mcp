@@ -86,7 +86,22 @@ git push -u origin main
   API 未提供 Pages 开关，需在网页端启用。
 * 换域名/换平台时，只需改 `--site-url` 重新生成并推送。
 
-## 6. 性能与可访问性
+## 6. 主题配图与图片 SEO
+
+`tools/fetch_media.py` 从 Pexels（失败回退 Pixabay）抓取每款机台的主题图，
+产物写入 `web_static/assets/img/`，构建时随源码拷入 `static/`：
+
+| 文件 | 尺寸 | 用途 |
+| --- | --- | --- |
+| `<game>-hero.jpg` | 960×540 | 详情页主图 + 首页列表缩略图 |
+| `<game>-og.jpg` | 1200×630 | 该机台页的 `og:image` / `twitter:image` |
+
+页面侧处理：`alt` 中文描述、`width/height` 防 CLS、列表 `loading="lazy"`、
+主图 `fetchpriority="high"` + `preload`、`<figure>/<figcaption>` 说明与署名、
+`SoftwareApplication.image` 结构化数据；`assets/img/CREDITS.md` 提供来源与许可。
+未抓到素材时自动回退到程序生成的 `og-image.png`。
+
+## 7. 性能与可访问性
 
 | 项 | 做法 |
 | --- | --- |

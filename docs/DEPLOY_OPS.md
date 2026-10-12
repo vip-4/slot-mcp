@@ -64,7 +64,51 @@ schedule 中 `-1` 表示「任意」。
 报告正文包含：站点地址、页面数、机台清单、健康检查逐项结果、定时任务状态、
 PlayCanvas 项目概况——纯文本、结构化，便于人读也便于再次被程序解析。
 
-## 5. PlayCanvas 三维同步
+## 5. 主题配图（Pexels / Pixabay）
+
+```bash
+$env:PEXELS_API_KEY  = "..."
+$env:PIXABAY_API_KEY = "..."
+python -m slotmcp.tools.fetch_media            # 抓取 5 款机台主题图
+python -m slotmcp.tools.fetch_media --only lucky_fruits --dry-run
+```
+
+| 产物 | 尺寸 | 用途 |
+| --- | --- | --- |
+| `web_static/assets/img/<game>-hero.jpg` | 960×540 | 机台详情页主图 + 首页列表缩略图 |
+| `web_static/assets/img/<game>-og.jpg` | 1200×630 | 该机台页的 `og:image` / `twitter:image` |
+| `deploy/media.json` | — | 素材清单：来源、作者、许可、尺寸、字节数 |
+| `web_static/assets/img/CREDITS.md` | — | 署名表（随站点发布，页脚有入口） |
+
+接口要点（实测）：
+
+* 两个服务都**必须带浏览器 UA**，否则 Cloudflare 返回 `error code: 1010`。
+* Pexels CDN 支持 imgix 参数，直接请求裁剪尺寸即可，无需本地处理：
+  `?auto=compress&cs=tinysrgb&fit=crop&w=1200&h=630`。
+* Pixabay 的 `per_page` 合法区间是 **3–200**。
+* Pexels 优先，失败自动回退 Pixabay；都失败时页面回退到程序生成的 `og-image.png`。
+
+落地到页面的 SEO / 可访问性处理：显式 `width`/`height` 防 CLS、列表图 `loading="lazy" decoding="async"`、
+详情页主图 `fetchpriority="high"` + `<link rel="preload" as="image">`、`alt` 为中文描述、
+`<figure>` + `<figcaption>` 给出图片说明与来源署名、JSON-LD `SoftwareApplication.image`。
+
+## 6. GEO 监测（Metaso 秘塔 AI 搜索）
+
+SEO/GEO 做完之后需要闭环验证：AI 搜索能不能找到站点、摘要怎么描述它。
+
+```bash
+$env:METASO_API_KEY = "mk-..."
+python -m slotmcp.tools.deploy_ops --geo
+```
+
+`POST https://metaso.cn/api/v1/search`（`Authorization: Bearer`），body 形如
+`{"q": ..., "scope": "webpage", "size": 5, "includeSummary": true}`。
+输出：检索词、是否命中本站（`indexed`）、命中条数、前几条结果、AI 摘要；
+结果同时进入邮件报告，可配合 cron 做「上线后是否被收录」的长期观察。
+
+> 上线前基线示例：`命中本站 0/5 条` —— 站点未上线时属正常，上线并收录后应转为 `≥1`。
+
+## 7. PlayCanvas 三维同步
 
 可用作用域（实测）：`GET /projects/{id}/scenes` 与 `GET /projects/{id}/assets` 返回 200；
 `GET /projects/{id}` 返回 403（Token 缺 project 作用域），客户端对此**降级但不抛异常**。
@@ -86,7 +130,7 @@ PlayCanvas 项目概况——纯文本、结构化，便于人读也便于再次
 
 > 当前项目实测：1 个场景（Main Scene）、16 个资产。
 
-## 6. 让站点真正上线（需网页端一次点击）
+## 8. 让站点真正上线（需网页端一次点击）
 
 两个平台的 Pages 开关**没有开放 API**（Gitee 返回 405，AtomGit 返回 404），需要手动开启一次：
 
@@ -102,11 +146,11 @@ PlayCanvas 项目概况——纯文本、结构化，便于人读也便于再次
 
 仓库根目录即站点内容，所以 Pages 不需要指定子目录。
 
-## 7. 自测
+## 9. 自测
 
-`tests/test_services.py` 用**本地桩服务**（不发真实请求）验证 21 项：请求体形态、
+`tests/test_services.py` 用**本地桩服务**（不发真实请求）验证 29 项：请求体形态、
 `schedule` 换算与非法间隔拒绝、upsert 幂等（创建→更新→仍只有一条）、
-403 降级、场景描述导出、报告渲染。
+403 降级、图片结果归一化与裁剪 URL、Metaso 命中判定与错误降级、场景描述导出、报告渲染。
 
 ```bash
 python tests/run_tests.py services

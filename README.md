@@ -231,6 +231,7 @@ python -m slotmcp.tools.deploy_ops --all --dry-run # 只打印计划动作
 | Supabase | 排行榜（可选增强） | 项目当前 `INACTIVE`，客户端已实现 `ping/select/insert` 并在不可达时降级；恢复后前端可用 publishable key 直连 |
 | Cloudflare Pages | 静态站直传发布 | `python -m slotmcp.tools.deploy_pages --cloudflare`；multipart 直传，无需 wrangler。**当前账号项目配额已满（10/10）**，需先用 `--project <已有项目>` 或删除闲置项目 |
 | GitHub Pages | 生产站点（已上线） | `python -m slotmcp.tools.deploy_pages --github`；建仓 → 推送 → 开启 Pages，地址 `https://vip-4.github.io/slot-games/` |
+| CARTO / Pirate Weather / marketstack | 外部数据源体检 | `--sources` 进部署报告；CARTO 账号已停用、天气网关返回 HTML，marketstack 可用。**均不写入站点内容**（主题无关，会稀释 SEO 焦点） |
 
 ### 9.1 一键发布
 

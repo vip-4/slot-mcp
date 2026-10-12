@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from slotmcp.services.agentmail import AgentMailClient  # noqa: E402
+from slotmcp.services.carto import CartoClient  # noqa: E402
 from slotmcp.services.cloudflare import (  # noqa: E402
     CloudflareClient,
     build_manifest,
@@ -26,9 +27,11 @@ from slotmcp.services.media import (  # noqa: E402
     PixabayClient,
     PexelsClient,
 )
+from slotmcp.services.marketstack import MarketstackClient  # noqa: E402
 from slotmcp.services.metaso import MetasoClient  # noqa: E402
 from slotmcp.services.neon import NeonClient  # noqa: E402
 from slotmcp.services.supabase import SupabaseClient  # noqa: E402
+from slotmcp.services.weather import PirateWeatherClient  # noqa: E402
 from slotmcp.services.playcanvas import PlayCanvasClient, build_scene_descriptor  # noqa: E402
 
 FAILS = 0
@@ -57,6 +60,14 @@ class Handler(BaseHTTPRequestHandler):
         body = json.dumps(payload).encode()
         self.send_response(code)
         self.send_header("Content-Type", "application/json")
+        self.send_header("Content-Length", str(len(body)))
+        self.end_headers()
+        self.wfile.write(body)
+
+    def _html(self, code, text):
+        body = text.encode()
+        self.send_response(code)
+        self.send_header("Content-Type", "text/html; charset=utf-8")
         self.send_header("Content-Length", str(len(body)))
         self.end_headers()
         self.wfile.write(body)
@@ -94,6 +105,17 @@ class Handler(BaseHTTPRequestHandler):
             if table == "slot_scores":
                 return self._json(200, [{"game_id": "lucky_fruits", "best_multiplier": 18.4}])
             return self._json(200, [{"ok": 1}])
+        if "/carto-suspended/" in p:  # CARTO 账号停用
+            return self._json(401, {"error": "Account suspended", "status": 401, "account_id": "ac_test"})
+        if "/carto/" in p and p.endswith("/query"):  # CARTO SQL
+            return self._json(200, {"rows": [{"ok": 1}]})
+        if p.startswith("/weather-portal/"):  # 网关返回门户页面
+            return self._html(200, "<!DOCTYPE html><html><body>API portal</body></html>")
+        if "/marketstack/v2/eod" in p:  # APILayer marketstack
+            if self.headers.get("apikey") != "apilayer-x":
+                return self._json(401, {"error": {"code": "invalid_access_key", "message": "bad key"}})
+            return self._json(200, {"pagination": {"count": 1}, "data": [{
+                "open": 331.7, "close": 336.64, "symbol": "AAPL", "date": "2026-10-10T00:00:00+0000"}]})
         if p.endswith("/scenes"):
             return self._json(200, {"result": [{"id": 1, "name": "Main Scene"}]})
         if p.endswith("/assets"):
@@ -131,6 +153,10 @@ class Handler(BaseHTTPRequestHandler):
         if p.startswith("/rest/v1/"):  # Supabase 写入
             STATE["supa_body"] = body
             return self._json(201, [dict(body, id=1)])
+        if "/carto-suspended/" in p:  # CARTO 账号停用
+            return self._json(401, {"error": "Account suspended", "status": 401, "account_id": "ac_test"})
+        if "/carto/" in p and p.endswith("/query"):  # CARTO SQL（POST）
+            return self._json(200, {"rows": [{"ok": 1}]})
         if p == "/user/repos":  # GitHub 建仓
             return self._json(201, {"full_name": f"vip-4/{body.get('name')}", "html_url": "https://github.com/vip-4/x"})
         if "/repos/" in p and p.endswith("/pages"):  # GitHub 开启 Pages
@@ -340,6 +366,28 @@ def main() -> int:
         broken = MetasoClient("k", base_url=f"{base}/nope")
         err = broken.site_report("https://x.example", "测试")
         check(err["error"] != "", "接口失败时返回结构化错误而非抛异常")
+
+        print("== 外部数据源（CARTO / 天气 / marketstack） ==")
+        carto = CartoClient("carto-x", f"{base}/carto")
+        ok, rows, detail = carto.sql("SELECT 1 AS ok")
+        check(ok and rows[0]["ok"] == 1, f"CARTO SQL 成功：{rows}")
+        st = carto.status()
+        check(st["ok"], f"CARTO 探活：{st['detail']}")
+        # 账号停用（401）必须降级为明确原因，不抛异常
+        suspended = CartoClient("carto-bad", f"{base}/carto-suspended")
+        st2 = suspended.status()
+        check(not st2["ok"] and "停用" in st2["detail"], f"CARTO 账号停用降级：{st2['detail']}")
+
+        weather = PirateWeatherClient("pw-x", f"{base}/weather-portal")
+        ok, _, detail = weather.forecast(39.9, 116.4)
+        check(not ok and "门户" in detail, f"天气网关返回 HTML 时降级：{detail[:40]}")
+
+        ms = MarketstackClient("apilayer-x", f"{base}/marketstack")
+        ok, rows, detail = ms.eod("AAPL", limit=1)
+        check(ok and rows[0]["close"] == 336.64, f"marketstack 取到收盘价：{rows}")
+        check(ms.status()["ok"], "marketstack 探活通过")
+        bad = MarketstackClient("bad-key", f"{base}/marketstack")
+        check(not bad.status()["ok"], "marketstack 鉴权失败被捕获")
 
         print("== 报告渲染 ==")
         text = AgentMailClient.render_report(

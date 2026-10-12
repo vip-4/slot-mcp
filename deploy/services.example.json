@@ -45,5 +45,15 @@
     "token": "ghp_...（或设置环境变量 GITHUB_TOKEN）",
     "repo": "slot-games",
     "branch": "main"
+  },
+
+  "carto": {
+    "host": "https://gcp-us-east1.api.carto.com",
+    "api_key": "eyJ...（或设置环境变量 CARTO_API_KEY）"
+  },
+
+  "datasources": {
+    "weather_key": "Pirate Weather key（或设置环境变量 PIRATE_WEATHER_API_KEY）",
+    "apilayer_key": "APILayer key（或设置环境变量 APILAYER_API_KEY）"
   }
 }

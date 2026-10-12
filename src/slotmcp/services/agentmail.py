@@ -63,6 +63,7 @@ class AgentMailClient:
         playcanvas: Dict[str, Any],
         geo: Optional[Dict[str, Any]] = None,
         db: Optional[List[str]] = None,
+        sources: Optional[List[Dict[str, Any]]] = None,
     ) -> str:
         """把部署结果渲染为纯文本报告（邮件正文与控制台共用）。"""
         lines = [
@@ -111,5 +112,10 @@ class AgentMailClient:
             lines += ["", "【数据库（部署审计 / 统计快照）】"]
             for note in db:
                 lines.append(f"  - {note}")
+        if sources:
+            lines += ["", "【外部数据源可用性】"]
+            for s in sources:
+                flag = "OK " if s.get("ok") else "NG "
+                lines.append(f"  [{flag}] {s.get('name','')}: {s.get('detail','')}")
         lines += ["", "-- 本邮件由 slotmcp 部署流水线自动发送"]
         return "\n".join(lines)

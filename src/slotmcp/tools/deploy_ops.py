@@ -26,6 +26,9 @@ ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(ROOT / "src"))
 
 from slotmcp.services.agentmail import AgentMailClient  # noqa: E402
+from slotmcp.services.carto import CartoClient  # noqa: E402
+from slotmcp.services.marketstack import MarketstackClient  # noqa: E402
+from slotmcp.services.weather import PirateWeatherClient  # noqa: E402
 from slotmcp.services.cronjob import CronJobClient, every_n_minutes  # noqa: E402
 from slotmcp.services.http import head_ok  # noqa: E402
 from slotmcp.services.metaso import MetasoClient  # noqa: E402
@@ -49,6 +52,10 @@ ENV_MAP = {
     "playcanvas_token": "PLAYCANVAS_TOKEN",
     "playcanvas_project": "PLAYCANVAS_PROJECT_ID",
     "metaso_key": "METASO_API_KEY",
+    "carto_key": "CARTO_API_KEY",
+    "carto_host": "CARTO_HOST",
+    "weather_key": "PIRATE_WEATHER_API_KEY",
+    "apilayer_key": "APILAYER_API_KEY",
 }
 
 
@@ -65,6 +72,10 @@ def load_config() -> Dict[str, Any]:
         "playcanvas_scene": "Main Scene",
         "metaso_key": "",
         "metaso_query": "5 款免费在线老虎机 SLOT 合集 静态站",
+        "carto_key": "",
+        "carto_host": "https://gcp-us-east1.api.carto.com",
+        "weather_key": "",
+        "apilayer_key": "",
     }
     for name in ("deploy/services.json", "deploy/services.local.json"):
         path = ROOT / name
@@ -88,6 +99,12 @@ def load_config() -> Dict[str, Any]:
             ms = raw.get("metaso", {}) or {}
             cfg["metaso_key"] = ms.get("api_key", cfg["metaso_key"])
             cfg["metaso_query"] = ms.get("query", cfg["metaso_query"])
+            carto = raw.get("carto", {}) or {}
+            cfg["carto_key"] = carto.get("api_key", cfg["carto_key"])
+            cfg["carto_host"] = carto.get("host", cfg["carto_host"])
+            sources = raw.get("datasources", {}) or {}
+            cfg["weather_key"] = sources.get("weather_key", cfg["weather_key"])
+            cfg["apilayer_key"] = sources.get("apilayer_key", cfg["apilayer_key"])
 
     for key, env in ENV_MAP.items():
         val = os.getenv(env)
@@ -210,6 +227,52 @@ def run_db(cfg: Dict[str, Any], dry_run: bool, checks: List[Dict[str, Any]]) -> 
     return notes
 
 
+def run_sources(cfg: Dict[str, Any], dry_run: bool) -> List[Dict[str, Any]]:
+    """外部数据源可用性监测（CARTO / Pirate Weather / marketstack）。
+
+    这些数据源与机台主题无关，**不写入站点内容**（混入会稀释 SEO/GEO 焦点），
+    只作为运维依赖体检，结果进部署报告。任一不可用都降级为说明，不影响部署。
+    """
+    plan = []
+    if cfg.get("carto_key"):
+        plan.append(("CARTO（空间数据）", "carto"))
+    if cfg.get("weather_key"):
+        plan.append(("Pirate Weather（天气）", "weather"))
+    if cfg.get("apilayer_key"):
+        plan.append(("marketstack（行情，APILayer）", "marketstack"))
+    if not plan:
+        print("  （未配置任何数据源凭证）")
+        return []
+
+    if dry_run:
+        for name, _ in plan:
+            print(f"  [DRY] 将检测 {name}")
+        return [{"name": n, "ok": None, "detail": "dry-run"} for n, _ in plan]
+
+    results: List[Dict[str, Any]] = []
+    for name, kind in plan:
+        try:
+            if kind == "carto":
+                client = CartoClient(cfg["carto_key"], host=cfg.get("carto_host", "") or CartoClient.DEFAULT_HOST)
+                state = client.status()
+                results.append({"name": name, **state})
+            elif kind == "weather":
+                client = PirateWeatherClient(cfg["weather_key"])
+                state = client.summarize(39.9042, 116.4074)
+                results.append({"name": name, **state})
+            else:
+                client = MarketstackClient(cfg["apilayer_key"])
+                state = client.status()
+                results.append({"name": name, **state})
+        except Exception as exc:  # noqa: BLE001
+            results.append({"name": name, "ok": False, "detail": f"客户端异常: {type(exc).__name__}"})
+    for r in results:
+        flag = "OK" if r.get("ok") else "NG"
+        extra = f"（{r.get('close')} @ {r.get('date')}）" if r.get("ok") and r.get("close") else ""
+        print(f"  [{flag}] {r['name']}: {r.get('detail','')}{extra}")
+    return results
+
+
 def run_geo(cfg: Dict[str, Any], dry_run: bool) -> Dict[str, Any]:
     """GEO 监测：问一次 AI 搜索，看站点是否被收录、摘要怎么描述。"""
     if dry_run or not cfg["metaso_key"]:
@@ -239,6 +302,7 @@ def run_email(
     facts: Dict[str, Any],
     geo: Optional[Dict[str, Any]] = None,
     db: Optional[List[str]] = None,
+    sources: Optional[List[Dict[str, Any]]] = None,
 ) -> Dict[str, Any]:
     to = recipients or list(cfg["agentmail_to"])
     subject = f"[Slot MCP] 静态站部署报告 · {cfg['site_url']}"
@@ -251,6 +315,7 @@ def run_email(
         playcanvas=playcanvas,
         geo=geo,
         db=db,
+        sources=sources,
     )
     if not to:
         print("  [NG] 未指定收件人（用 --email 或配置 agentmail.to / AGENTMAIL_TO）")
@@ -279,6 +344,7 @@ def main() -> int:
     ap.add_argument("--playcanvas", action="store_true", help="读取 PlayCanvas 项目清单")
     ap.add_argument("--sync-scene", action="store_true", help="导出机台场景描述 JSON")
     ap.add_argument("--geo", action="store_true", help="用 Metaso 检查 AI 搜索收录与摘要（GEO 监测）")
+    ap.add_argument("--sources", action="store_true", help="检测外部数据源可用性（CARTO / 天气 / marketstack）")
     ap.add_argument("--db", action="store_true", help="把本次运维结果写入 Neon（部署审计）")
     ap.add_argument("--all", action="store_true", help="执行全部动作")
     ap.add_argument("--dry-run", action="store_true", help="只打印计划动作，不调用外部服务")
@@ -300,6 +366,7 @@ def main() -> int:
     playcanvas: Dict[str, Any] = {}
     geo: Dict[str, Any] = {}
     db: List[str] = []
+    sources: List[Dict[str, Any]] = []
 
     if args.check or do_all:
         print("\n== 健康检查 ==")
@@ -313,12 +380,15 @@ def main() -> int:
     if args.geo or do_all:
         print("\n== GEO 监测（Metaso） ==")
         geo = run_geo(cfg, args.dry_run)
+    if args.sources or do_all:
+        print("\n== 外部数据源 ==")
+        sources = run_sources(cfg, args.dry_run)
     if args.db or do_all:
         print("\n== 数据库审计（Neon） ==")
         db = run_db(cfg, args.dry_run, checks)
     if args.email is not None or do_all:
         print("\n== 邮件报告（AgentMail） ==")
-        run_email(cfg, args.email or [], args.dry_run, checks, cron, playcanvas, facts, geo, db)
+        run_email(cfg, args.email or [], args.dry_run, checks, cron, playcanvas, facts, geo, db, sources)
 
     failed = [c for c in checks if not c["ok"]] + [j for j in cron if j.get("state") == "failed"]
     print()

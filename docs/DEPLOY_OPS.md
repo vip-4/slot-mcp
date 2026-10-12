@@ -191,13 +191,29 @@ python -m slotmcp.tools.deploy_pages --all --dry-run
 推送用 `git`，并且**先 `fetch` + `reset --soft` 对齐远端历史**——否则每次用临时仓库推送都会因无关历史被拒
 （`non-fast-forward`）。内容推送与 Pages 开启解耦：推送失败不会误判为 Pages 未开启。
 
-## 10. 自测
+## 10. 外部数据源监测（CARTO / 天气 / marketstack）
 
-`tests/test_services.py` 用**本地桩服务**（不发真实请求）验证 50 项：请求体形态、
+```bash
+python -m slotmcp.tools.deploy_ops --sources
+```
+
+| 数据源 | 实测结果 | 处理 |
+| --- | --- | --- |
+| CARTO（`gcp-us-east1`） | **账号已停用**（401 `Account suspended`，account `ac_lv1128s9`） | 降级为说明，不抛异常 |
+| Pirate Weather（apiable.io 网关） | **不可用**：所有路径都返回门户 HTML（`text/html`）而非 JSON | 客户端识别「网关返回非 JSON」并降级 |
+| marketstack（APILayer） | **可用**：`GET https://api.apilayer.net/marketstack/v2/eod` + 头 `apikey`（直连 `api.marketstack.com?access_key=` 会 401） | 取 AAPL 收盘价作为探活样本 |
+
+**这些数据不写入站点内容**——地图 / 天气 / 行情与机台主题无关，混进页面会稀释
+SEO/GEO 焦点、增加无谓的正文噪声；它们只作为运维依赖体检进入部署报告。
+
+## 11. 自测
+
+`tests/test_services.py` 用**本地桩服务**（不发真实请求）验证 57 项：请求体形态、
 `schedule` 换算与非法间隔拒绝、upsert 幂等（创建→更新→仍只有一条）、
 403 降级、图片结果归一化与裁剪 URL、Metaso 命中判定与错误降级、
 Neon HTTP SQL（含字面量转义与结构化错误）、Supabase REST 读写与暂停降级、
-Cloudflare 目录收集 / manifest / multipart 构造 / 项目与部署请求、GitHub 建仓与 Pages 请求体、场景导出、报告渲染。
+Cloudflare 目录收集 / manifest / multipart 构造 / 项目与部署请求、GitHub 建仓与 Pages 请求体、
+CARTO SQL 与「账号停用」降级、天气网关返回 HTML 时的降级、marketstack 取价与鉴权失败、场景导出、报告渲染。
 
 ```bash
 python tests/run_tests.py services

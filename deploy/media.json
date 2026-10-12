@@ -158,6 +158,31 @@
           "source": "https://images.pexels.com/photos/796206/pexels-photo-796206.jpeg?auto=compress&cs=tinysrgb&fit=crop&w=1200&h=630"
         }
       }
+    },
+    {
+      "game": "thunder_temple",
+      "alt": "雷霆神殿机台主题图：雷暴与闪电",
+      "provider": "pexels",
+      "page_url": "https://www.pexels.com/photo/lightning-strike-in-a-stormy-night-8964499/",
+      "author": "alejandro penner",
+      "author_url": "https://www.pexels.com/@alejandropenner",
+      "license": "Pexels License（可免费商用，无需署名但建议署名）",
+      "files": {
+        "hero": {
+          "path": "thunder_temple-hero.jpg",
+          "width": 960,
+          "height": 540,
+          "bytes": 22099,
+          "source": "https://images.pexels.com/photos/8964499/pexels-photo-8964499.jpeg?auto=compress&cs=tinysrgb&fit=crop&w=960&h=540"
+        },
+        "og": {
+          "path": "thunder_temple-og.jpg",
+          "width": 1200,
+          "height": 630,
+          "bytes": 28794,
+          "source": "https://images.pexels.com/photos/8964499/pexels-photo-8964499.jpeg?auto=compress&cs=tinysrgb&fit=crop&w=1200&h=630"
+        }
+      }
     }
   ]
 }

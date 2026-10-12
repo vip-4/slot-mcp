@@ -33,7 +33,7 @@ def check(condition: bool, message: str) -> None:
 def test_configuration() -> None:
     print("[engine] 配置与校验")
     ids = game_ids()
-    check(len(ids) == 6, f"内置 6 款机台: {', '.join(ids)}")
+    check(len(ids) == 7, f"内置 7 款机台: {', '.join(ids)}")
     check("fortune_koi" in ids, "新增机台 fortune_koi 已注册")
     for cfg in iter_game_configs():
         errors = cfg.validate()
@@ -265,6 +265,153 @@ def _reel_set(symbols):
     return ReelSet(name="base", strips=[list(symbols) for _ in range(5)], weights=[{s: 1 for s in symbols} for _ in range(5)])
 
 
+def test_multiplier_wild_and_pick_bonus() -> None:
+    print("[engine] 倍率 Wild / Pick'em 选宝")
+    from slotmcp.engine.config import MultiplierWildConfig, PickBonusConfig
+    from slotmcp.engine.evaluator import evaluate_lines, evaluate_ways
+    from slotmcp.engine.features import resolve_pick_bonus
+
+    tt = get_registry().get("thunder_temple")
+    cfg = tt.config
+    ctx = tt.build_context(total_bet=1.0)
+
+    # 同一命中里 ×2 与 ×3 相加 => ×4（combine=sum）
+    grid = [
+        ["rune", "eagle", "rune"],
+        ["rune", "wild_x2", "rune"],
+        ["rune", "wild_x3", "rune"],
+        ["rune", "eagle", "rune"],
+        ["rune", "wolf", "rune"],
+    ]
+    wins = evaluate_lines(cfg, grid, line_bet=ctx.line_bet, lines=ctx.lines, active_lines=ctx.active_lines, base_multiplier=1.0)
+    eagle = [w for w in wins if w.symbol == "eagle"]
+    check(bool(eagle), "倍率 Wild 参与替代并产生线赔")
+    check(all(w.multiplier == 4.0 for w in eagle), f"×2 + ×3 相加为 ×4（实际 {[w.multiplier for w in eagle]}）")
+
+    # combine 可切换：max / product
+    for mode, expected in (("max", 3.0), ("product", 6.0), ("sum", 4.0)):
+        cfg.features.multiplier_wild = MultiplierWildConfig(
+            enabled=True, symbols={"wild_x2": 2.0, "wild_x3": 3.0}, combine=mode
+        )
+        w = [x for x in evaluate_lines(cfg, grid, line_bet=ctx.line_bet, lines=ctx.lines, active_lines=ctx.active_lines, base_multiplier=1.0) if x.symbol == "eagle"]
+        check(w and abs(w[0].multiplier - expected) < 1e-9, f"combine={mode} -> ×{expected}（实际 {w[0].multiplier if w else None}）")
+
+    cfg.features.multiplier_wild = MultiplierWildConfig(
+        enabled=True, symbols={"wild_x2": 2.0, "wild_x3": 3.0}, combine="sum"
+    )
+    # Ways 结算同样生效（用本机台符号构造相邻轴命中）
+    wgrid = [
+        ["eagle", "rune", "rune"],
+        ["wild_x2", "eagle", "rune"],
+        ["eagle", "rune", "rune"],
+        ["eagle", "rune", "rune"],
+        ["rune", "rune", "rune"],
+    ]
+    ways_wins = evaluate_ways(cfg, wgrid, bet_per_way=ctx.line_bet, base_multiplier=1.0)
+    eagle_ways = [w for w in ways_wins if w.symbol == "eagle"]
+    check(
+        bool(eagle_ways) and eagle_ways[0].multiplier == 2.0,
+        f"Ways 结算也应用倍率 Wild（{[w.multiplier for w in ways_wins]}）",
+    )
+
+    # Pick'em：无放回抽完即停，有放回可重复
+    pb = PickBonusConfig(
+        enabled=True,
+        trigger_symbol="totem",
+        trigger_counts={3: 3},
+        prize_pool={"a": 1.0, "b": 2.0},
+        weights={"a": 1, "b": 1},
+        unique=True,
+    )
+    picks, total = resolve_pick_bonus(cfg, pb, 3, SlotRNG("pick"))
+    check(len(picks) == 2 and total == 3.0, f"无放回最多抽完奖品池：{picks} / {total}")
+
+    pb2 = PickBonusConfig(
+        enabled=True,
+        trigger_symbol="totem",
+        trigger_counts={3: 4},
+        prize_pool={"a": 1.0},
+        weights={"a": 1},
+        unique=False,
+        award_multiplier=2.0,
+    )
+    picks2, total2 = resolve_pick_bonus(cfg, pb2, 4, SlotRNG("pick2"))
+    check(len(picks2) == 4 and abs(total2 - 8.0) < 1e-9, f"有放回可重复且应用总倍率：{picks2} / {total2}")
+
+    # 端到端：能触发 pick_bonus，且触发符号个数决定挑选次数
+    from slotmcp.engine.game import GameState
+
+    st = GameState()
+    g3 = [["totem", "rune", "rune"]] + [["rune", "rune", "rune"] for _ in range(4)]
+    g3[1][1] = "totem"
+    g3[2][1] = "totem"
+    award = tt._pick_bonus_award(cfg, ctx, g3)
+    check(award is not None and award[0].kind == "pick_bonus", "3 枚雷石触发选宝")
+    check(len(award[1]) == 3, f"3 枚 -> 挑 3 次（实际 {len(award[1])}）")
+    g2 = [["totem", "rune", "rune"], ["totem", "rune", "rune"]] + [["rune", "rune", "rune"] for _ in range(3)]
+    check(tt._pick_bonus_award(cfg, ctx, g2) is None, "未达触发个数时不派奖")
+
+    hit = 0
+    tt.rng = SlotRNG("tt")
+    for _ in range(4000):
+        for step in tt.spin(total_bet=1.0).steps:
+            if any(e.get("type") == "pick_bonus" for e in step.events):
+                hit += 1
+    check(hit > 0, f"端到端可触发选宝（{hit} 次）")
+
+    # 参数可调
+    from slotmcp.engine.config import set_parameter as _set
+
+    _set(cfg, "features.pick_bonus.award_multiplier", 3.0)
+    boosted = tt._pick_bonus_award(cfg, ctx, g3)
+    _set(cfg, "features.pick_bonus.award_multiplier", 1.0)
+    base = tt._pick_bonus_award(cfg, ctx, g3)
+    check(boosted[0].amount > base[0].amount, "slot_set_parameter 可调整选宝总倍率")
+
+
+def test_new_feature_config_validation() -> None:
+    print("[engine] 倍率 Wild / 选宝 配置校验")
+    from slotmcp.engine.config import (
+        Features,
+        GameConfig,
+        MultiplierWildConfig,
+        PickBonusConfig,
+    )
+
+    bad = GameConfig(
+        id="bad_new",
+        name="bad",
+        reels=5,
+        rows=3,
+        symbols={"wild": _sym("wild", "wild"), "coin": _sym("coin", "bonus")},
+        reel_sets={"base": _reel_set(["wild", "coin"])},
+        features=Features(
+            multiplier_wild=MultiplierWildConfig(
+                enabled=True, symbols={"ghost": 2.0, "coin": 2.0}, combine="weird", apply_to=["line", "nope"]
+            ),
+            pick_bonus=PickBonusConfig(
+                enabled=True,
+                trigger_symbol="missing",
+                trigger_counts={},
+                prize_pool={"a": 1.0},
+                weights={},
+                unique=True,
+                award_multiplier=0.0,
+            ),
+        ),
+    )
+    errors = bad.validate()
+    joined = " | ".join(errors)
+    check(any("multiplier_wild 引用未定义符号" in e for e in errors), f"倍率 Wild 符号未定义被拦截：{joined[:160]}")
+    check(any("只能作用于 Wild" in e for e in errors), "倍率 Wild 指向非 Wild 被拦截")
+    check(any("combine 非法" in e for e in errors), "非法合并方式被拦截")
+    check(any("apply_to 非法" in e for e in errors), "非法生效范围被拦截")
+    check(any("pick_bonus.trigger_symbol" in e for e in errors), "选宝触发符号未定义被拦截")
+    check(any("trigger_counts" in e for e in errors), "选宝触发个数为空被拦截")
+    check(any("weights 缺少或非法" in e for e in errors), "选宝奖品缺少权重被拦截")
+    check(any("award_multiplier" in e for e in errors), "选宝总倍率非正被拦截")
+
+
 def test_session() -> None:
     print("[engine] 会话与钱包")
     machine = get_registry().get("lucky_fruits")
@@ -320,10 +467,12 @@ def test_hot_reload() -> None:
 
 
 def test_rtp_regression() -> None:
-    print("[engine] RTP 回归（2 万局快速档）")
+    print("[engine] RTP 回归（2 万局快速档；高波动机台 8 万局）")
     for game_id in game_ids():
         machine = get_registry().get(game_id)
-        report = simulate(machine, spins=20_000, bet=1.0, seed=f"regression:{game_id}")
+        # 高波动机台的单样本方差很大，2 万局容易被尾部大奖带偏，因此加大样本
+        spins = 80_000 if str(machine.config.math.volatility).startswith("high") else 20_000
+        report = simulate(machine, spins=spins, bet=1.0, seed=f"regression:{game_id}")
         check(
             0.88 <= report.rtp <= 1.05,
             f"{game_id} RTP {report.rtp:.4f} 在合理区间（目标 {report.target_rtp:.2f}）",
@@ -338,6 +487,8 @@ def main() -> int:
     test_feature_flows()
     test_collect_and_random_wild()
     test_feature_config_validation()
+    test_multiplier_wild_and_pick_bonus()
+    test_new_feature_config_validation()
     test_session()
     test_hot_reload()
     test_rtp_regression()

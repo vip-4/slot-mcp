@@ -17,3 +17,5 @@
 | pharaoh_tomb | og | Mauricio Artieda | https://www.pexels.com/photo/sculpture-and-carvings-in-ancient-tomb-in-egypt-17447963/ | Pexels License（可免费商用，无需署名但建议署名） |
 | star_expedition | hero | Edvin Richardson | https://www.pexels.com/photo/space-shuttle-launch-during-nighttime-796206/ | Pexels License（可免费商用，无需署名但建议署名） |
 | star_expedition | og | Edvin Richardson | https://www.pexels.com/photo/space-shuttle-launch-during-nighttime-796206/ | Pexels License（可免费商用，无需署名但建议署名） |
+| thunder_temple | hero | alejandro penner | https://www.pexels.com/photo/lightning-strike-in-a-stormy-night-8964499/ | Pexels License（可免费商用，无需署名但建议署名） |
+| thunder_temple | og | alejandro penner | https://www.pexels.com/photo/lightning-strike-in-a-stormy-night-8964499/ | Pexels License（可免费商用，无需署名但建议署名） |

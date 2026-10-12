@@ -94,6 +94,8 @@
         "free_spins",
         "gamble",
         "hold_win",
+        "multiplier_wild",
+        "pick_bonus",
         "random_wild"
       ]
     },
@@ -174,6 +176,8 @@
         "free_spins",
         "gamble",
         "hold_win",
+        "multiplier_wild",
+        "pick_bonus",
         "random_wild"
       ]
     },
@@ -291,6 +295,8 @@
         "free_spins",
         "gamble",
         "hold_win",
+        "multiplier_wild",
+        "pick_bonus",
         "random_wild"
       ]
     },
@@ -371,6 +377,8 @@
         "free_spins",
         "gamble",
         "hold_win",
+        "multiplier_wild",
+        "pick_bonus",
         "random_wild"
       ]
     },
@@ -472,6 +480,8 @@
         "free_spins",
         "gamble",
         "hold_win",
+        "multiplier_wild",
+        "pick_bonus",
         "random_wild"
       ]
     },
@@ -559,6 +569,113 @@
         "free_spins",
         "gamble",
         "hold_win",
+        "multiplier_wild",
+        "pick_bonus",
+        "random_wild"
+      ]
+    },
+    {
+      "id": "thunder_temple",
+      "name": "雷霆神殿",
+      "reels": 5,
+      "rows": 3,
+      "pay_mode": "lines",
+      "theme": {
+        "id": "thunder",
+        "name": "雷霆神殿",
+        "palette": {
+          "grid": "#141a33",
+          "reel": "#1c2442",
+          "win": "#ffd166",
+          "wild": "#ffe066",
+          "bonus": "#8fe3ff"
+        },
+        "cabinet_color": "#1d2340",
+        "background": "#080b18",
+        "accent": "#ffd166",
+        "music": ""
+      },
+      "symbols": [
+        {
+          "id": "eagle",
+          "name": "雷鹰",
+          "kind": "standard",
+          "color": "#bfe6ff",
+          "glyph": "🦅"
+        },
+        {
+          "id": "wolf",
+          "name": "苍狼",
+          "kind": "standard",
+          "color": "#cfd8e3",
+          "glyph": "🐺"
+        },
+        {
+          "id": "raven",
+          "name": "渡鸦",
+          "kind": "standard",
+          "color": "#a08cff",
+          "glyph": "🐦"
+        },
+        {
+          "id": "spear",
+          "name": "长矛",
+          "kind": "standard",
+          "color": "#9ad1ff",
+          "glyph": "🔱"
+        },
+        {
+          "id": "shield",
+          "name": "盾牌",
+          "kind": "standard",
+          "color": "#ffd9a0",
+          "glyph": "🛡️"
+        },
+        {
+          "id": "rune",
+          "name": "符文",
+          "kind": "standard",
+          "color": "#c9f7d0",
+          "glyph": "🔯"
+        },
+        {
+          "id": "wild_x2",
+          "name": "雷锤 Wild ×2",
+          "kind": "wild",
+          "color": "#ffe066",
+          "glyph": "🔨"
+        },
+        {
+          "id": "wild_x3",
+          "name": "雷锤 Wild ×3",
+          "kind": "wild",
+          "color": "#ff9d3d",
+          "glyph": "⚡"
+        },
+        {
+          "id": "scatter",
+          "name": "神殿之门 Scatter",
+          "kind": "scatter",
+          "color": "#ffd9ec",
+          "glyph": "🏛️"
+        },
+        {
+          "id": "totem",
+          "name": "雷石（选宝触发）",
+          "kind": "bonus",
+          "color": "#8fe3ff",
+          "glyph": "🗿"
+        }
+      ],
+      "features": [
+        "cascade",
+        "collect",
+        "expanding_wild",
+        "free_spins",
+        "gamble",
+        "hold_win",
+        "multiplier_wild",
+        "pick_bonus",
         "random_wild"
       ]
     }

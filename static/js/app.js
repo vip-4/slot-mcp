@@ -137,8 +137,12 @@
       const sym = cfg.symbols[id] || { glyph: '?', name: id, color: '#888' };
       cell.textContent = sym.glyph;
       cell.setAttribute('role', 'img');
-      cell.setAttribute('aria-label', sym.name);
+      // 倍率 Wild：在格子上标注 ×N，便于一眼看出本局倍率来源
+      const symMult = Number(sym.multiplier || 1);
+      cell.setAttribute('aria-label', symMult > 1 ? `${sym.name} ×${symMult}` : sym.name);
+      cell.dataset.mult = symMult > 1 ? String(symMult) : '';
       cell.style.setProperty('--sym', sym.color || '#8ea0ff');
+      cell.classList.toggle('mult', symMult > 1);
       cell.classList.toggle('win', winset.has(key));
       cell.classList.toggle('hold', holdset.has(key));
     });
@@ -159,7 +163,8 @@
     Object.keys(cfg.symbols).forEach((id) => {
       const s = cfg.symbols[id];
       if (!s.pays || !Object.keys(s.pays).length) return;
-      html += `<tr><th scope="row"><span class="sym" style="--sym:${s.color}">${s.glyph}</span>${s.name}</th>`;
+      const badge = Number(s.multiplier || 1) > 1 ? ` ×${Number(s.multiplier)}` : '';
+      html += `<tr><th scope="row"><span class="sym" style="--sym:${s.color}">${s.glyph}</span>${s.name}${badge}</th>`;
       heads.forEach((n) => {
         html += `<td>${s.pays[String(n)] ? formatNum(s.pays[String(n)]) : '—'}</td>`;
       });
@@ -329,6 +334,7 @@
         else if (e.type === 'full_grid_bonus') say(`全屏大奖 +${e.amount}`);
         else if (e.type === 'random_wild') say(`锦鲤跃入水面：随机投放 ${e.count} 个 Wild`);
         else if (e.type === 'collect') say(`锦鲤纳福：收集 ${e.coins} 枚金币，+${e.amount}`);
+        else if (e.type === 'pick_bonus') say(`选宝奖励：${e.picks.length} 次挑选（${e.picks.join(' / ')}），+${e.award}`);
       });
       if (!reduceMotion) await sleep(step.phase === 'hold_win' ? 620 : i === 0 ? 420 : 340);
       if (step.stepWin > 0) el('round-win').textContent = total.toFixed(2);

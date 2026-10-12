@@ -22,6 +22,7 @@ from .features import (
     count_symbols,
     keys_to_positions,
     place_random_wilds,
+    resolve_pick_bonus,
 )
 from .reels import Grid, ReelStripSet
 from .rng import SlotRNG
@@ -464,6 +465,34 @@ class SlotMachine:
             label=f"收集 {len(coins)} 枚金币 ×{multiplier:g}",
         )
 
+    def _pick_bonus_award(
+        self, cfg, ctx: BetContext, grid: Grid
+    ) -> Optional[Tuple[WinEvent, List[str]]]:
+        """Pick'em：触发符号达到个数后连续挑选奖品并累计奖励（总注倍数）。"""
+        pb = cfg.features.pick_bonus
+        if not pb or not pb.enabled:
+            return None
+        count = sum(1 for column in grid for sym in column if sym == pb.trigger_symbol)
+        picks = pb.picks_for(count)
+        if picks <= 0:
+            return None
+        chosen, total = resolve_pick_bonus(cfg, pb, picks, self.rng)
+        if total <= 0:
+            return None
+        amount = round(total * ctx.total_bet, 6)
+        return (
+            WinEvent(
+                kind="pick_bonus",
+                symbol=pb.trigger_symbol,
+                count=len(chosen),
+                positions=[],
+                base_amount=amount,
+                amount=amount,
+                label=f"选宝 {len(chosen)} 次：{' / '.join(chosen)}",
+            ),
+            chosen,
+        )
+
     def _settle(
         self,
         st: GameState,
@@ -491,7 +520,8 @@ class SlotMachine:
                 active_lines=ctx.active_lines,
             )
             events: List[Dict[str, Any]] = list(extra_events or []) if guard == 0 else []
-            # Cash Collect 只对「新鲜网格」结算：级联派生网格会让同一枚币被重复收取
+            # Cash Collect / Pick'em 只对「新鲜网格」结算：
+            # 级联派生网格会让同一枚币或同一次选择奖励被重复派发
             if guard == 0:
                 award = self._collect_award(cfg, st, ctx, grid)
                 if award is not None:
@@ -502,6 +532,16 @@ class SlotMachine:
                             "collector": cfg.features.collect.collector,
                             "coins": len(award.positions),
                             "amount": award.amount,
+                        }
+                    )
+                pick = self._pick_bonus_award(cfg, ctx, grid)
+                if pick is not None:
+                    wins.append(pick[0])
+                    events.append(
+                        {
+                            "type": "pick_bonus",
+                            "picks": pick[1],
+                            "award": pick[0].amount,
                         }
                     )
             step_win = round(sum(w.amount for w in wins), 6)

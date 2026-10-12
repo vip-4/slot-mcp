@@ -1,4 +1,4 @@
-"""CONFIG 引擎：六款多主题机台共用的一套配置模型。
+"""CONFIG 引擎：七款多主题机台共用的一套配置模型。
 
 设计要点
 --------
@@ -433,6 +433,102 @@ class CollectConfig:
 
 
 @dataclass
+class MultiplierWildConfig:
+    """倍率 Wild：参与替代的 Wild 自带倍率，对命中赔付相乘。
+
+    * `symbols`：Wild 符号 -> 倍率（2.0 表示翻倍）
+    * `combine`：同一条命中里出现多个倍率 Wild 时的合并方式
+      `max`（取最大，最保守）/ `sum`（相加）/ `product`（相乘，最激进）
+    * `apply_to`：生效的结算方式（line / ways），默认两者都生效
+    """
+
+    enabled: bool = False
+    symbols: Dict[str, float] = field(default_factory=dict)
+    combine: str = "max"
+    apply_to: List[str] = field(default_factory=lambda: ["line", "ways"])
+
+    COMBINE_MODES = ("max", "sum", "product")
+
+    def multiplier_of(self, symbol_id: str) -> float:
+        return float(self.symbols.get(symbol_id, 1.0))
+
+    def combine_multipliers(self, values: List[float]) -> float:
+        if not values:
+            return 1.0
+        if self.combine == "sum":
+            return 1.0 + sum(max(0.0, v - 1.0) for v in values)
+        if self.combine == "product":
+            total = 1.0
+            for v in values:
+                total *= max(1.0, v)
+            return total
+        return max(values)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "enabled": self.enabled,
+            "symbols": dict(self.symbols),
+            "combine": self.combine,
+            "apply_to": list(self.apply_to),
+        }
+
+    @staticmethod
+    def from_dict(d: Dict[str, Any]) -> "MultiplierWildConfig":
+        return MultiplierWildConfig(
+            enabled=bool(d.get("enabled", False)),
+            symbols={k: float(v) for k, v in (d.get("symbols") or {}).items()},
+            combine=d.get("combine", "max"),
+            apply_to=list(d.get("apply_to") or ["line", "ways"]),
+        )
+
+
+@dataclass
+class PickBonusConfig:
+    """Pick'em 选择式奖励：触发符号达到个数后，玩家连续挑选若干次并累计奖励。
+
+    * `trigger_symbol` / `trigger_counts`：符号个数 -> 可挑次数
+    * `prize_pool`：奖品 -> 奖励（**总注倍数**）
+    * `weights`：奖品抽取权重（与 `prize_pool` 键一致）
+    * `unique`：True 表示无放回（挑过的奖品不再出现）
+    * `award_multiplier`：总奖励倍率（可用于免费旋转里加码）
+    """
+
+    enabled: bool = False
+    trigger_symbol: str = ""
+    trigger_counts: Dict[int, int] = field(default_factory=dict)
+    prize_pool: Dict[str, float] = field(default_factory=dict)
+    weights: Dict[str, int] = field(default_factory=dict)
+    unique: bool = True
+    award_multiplier: float = 1.0
+
+    def picks_for(self, count: int) -> int:
+        return int(self.trigger_counts.get(count, 0))
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "enabled": self.enabled,
+            "trigger_symbol": self.trigger_symbol,
+            "trigger_counts": {int(k): int(v) for k, v in self.trigger_counts.items()},
+            "prize_pool": dict(self.prize_pool),
+            "weights": {k: int(v) for k, v in self.weights.items()},
+            "unique": self.unique,
+            "award_multiplier": self.award_multiplier,
+        }
+
+    @staticmethod
+    def from_dict(d: Dict[str, Any]) -> "PickBonusConfig":
+        return PickBonusConfig(
+            enabled=bool(d.get("enabled", False)),
+            trigger_symbol=d.get("trigger_symbol", ""),
+            trigger_counts={int(k): int(v) for k, v in (d.get("trigger_counts") or {}).items()},
+            prize_pool={k: float(v) for k, v in (d.get("prize_pool") or {}).items()},
+            weights={k: int(v) for k, v in (d.get("weights") or {}).items()},
+            unique=bool(d.get("unique", True)),
+            award_multiplier=float(d.get("award_multiplier", 1.0)),
+        )
+
+
+@dataclass
 class GambleConfig:
     enabled: bool = False
     max_steps: int = 5
@@ -468,6 +564,8 @@ class Features:
     gamble: Optional[GambleConfig] = None
     random_wild: Optional[RandomWildConfig] = None
     collect: Optional[CollectConfig] = None
+    multiplier_wild: Optional[MultiplierWildConfig] = None
+    pick_bonus: Optional[PickBonusConfig] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -478,6 +576,8 @@ class Features:
             "gamble": self.gamble.to_dict() if self.gamble else None,
             "random_wild": self.random_wild.to_dict() if self.random_wild else None,
             "collect": self.collect.to_dict() if self.collect else None,
+            "multiplier_wild": self.multiplier_wild.to_dict() if self.multiplier_wild else None,
+            "pick_bonus": self.pick_bonus.to_dict() if self.pick_bonus else None,
         }
 
     @staticmethod
@@ -492,6 +592,10 @@ class Features:
             gamble=GambleConfig.from_dict(d["gamble"]) if d.get("gamble") else None,
             random_wild=RandomWildConfig.from_dict(d["random_wild"]) if d.get("random_wild") else None,
             collect=CollectConfig.from_dict(d["collect"]) if d.get("collect") else None,
+            multiplier_wild=MultiplierWildConfig.from_dict(d["multiplier_wild"])
+            if d.get("multiplier_wild")
+            else None,
+            pick_bonus=PickBonusConfig.from_dict(d["pick_bonus"]) if d.get("pick_bonus") else None,
         )
 
 
@@ -803,6 +907,46 @@ class GameConfig:
                 errors.append("collect 倍率必须为正")
             if col.jackpot_symbol and col.jackpot_symbol not in self.symbols:
                 errors.append(f"collect.jackpot_symbol 未定义: {col.jackpot_symbol}")
+
+        mw = self.features.multiplier_wild
+        if mw and mw.enabled:
+            if not mw.symbols:
+                errors.append("multiplier_wild.symbols 不能为空")
+            for sym_id, value in mw.symbols.items():
+                sym = self.symbols.get(sym_id)
+                if sym is None:
+                    errors.append(f"multiplier_wild 引用未定义符号: {sym_id}")
+                elif sym.kind != SymbolKind.WILD:
+                    errors.append(f"multiplier_wild 只能作用于 Wild: {sym_id}")
+                if value < 1.0:
+                    errors.append(f"multiplier_wild 倍率不能小于 1: {sym_id}={value}")
+            if mw.combine not in MultiplierWildConfig.COMBINE_MODES:
+                errors.append(f"multiplier_wild.combine 非法: {mw.combine}")
+            for mode in mw.apply_to:
+                if mode not in ("line", "ways"):
+                    errors.append(f"multiplier_wild.apply_to 非法: {mode}")
+
+        pb = self.features.pick_bonus
+        if pb and pb.enabled:
+            if pb.trigger_symbol not in self.symbols:
+                errors.append(f"pick_bonus.trigger_symbol 未定义: {pb.trigger_symbol}")
+            if not pb.trigger_counts:
+                errors.append("pick_bonus.trigger_counts 不能为空")
+            if any(v <= 0 for v in pb.trigger_counts.values()):
+                errors.append("pick_bonus 可挑次数必须为正")
+            if not pb.prize_pool:
+                errors.append("pick_bonus.prize_pool 不能为空")
+            if any(v < 0 for v in pb.prize_pool.values()):
+                errors.append("pick_bonus 奖品不能为负")
+            for prize in pb.prize_pool:
+                if prize not in pb.weights or pb.weights[prize] <= 0:
+                    errors.append(f"pick_bonus.weights 缺少或非法: {prize}")
+            if pb.trigger_counts and pb.unique:
+                max_picks = max(pb.trigger_counts.values())
+                if max_picks > len(pb.prize_pool):
+                    errors.append("pick_bonus 无放回时可挑次数不能超过奖品数")
+            if pb.award_multiplier <= 0:
+                errors.append("pick_bonus.award_multiplier 必须为正")
 
         ew = self.features.expanding_wild
         if ew:

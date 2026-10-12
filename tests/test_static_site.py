@@ -74,7 +74,7 @@ def main() -> int:
 
         data = json.loads((out / "data" / "games.json").read_text(encoding="utf-8"))
         games = data["games"]
-        check(len(games) == 6, f"导出 6 款机台配置（实际 {len(games)}）")
+        check(len(games) == 7, f"导出 7 款机台配置（实际 {len(games)}）")
         bad = []
         for raw in games:
             errs = GameConfig.from_dict(raw).validate()
@@ -144,7 +144,7 @@ def main() -> int:
         check("Sitemap: https://example.com/sitemap.xml" in robots, "robots.txt 含 Sitemap 声明")
         root = ET.fromstring((out / "sitemap.xml").read_text(encoding="utf-8"))
         urls = [u.text for u in root.iter("{http://www.sitemaps.org/schemas/sitemap/0.9}loc")]
-        check(len(urls) == 7, f"sitemap.xml 含 7 条 URL（实际 {len(urls)}）")
+        check(len(urls) == 8, f"sitemap.xml 含 8 条 URL（实际 {len(urls)}）")
         llms = (out / "llms.txt").read_text(encoding="utf-8")
         check("## 关键事实" in llms and "## 机台" in llms, "llms.txt 含 AI 摘要结构")
 

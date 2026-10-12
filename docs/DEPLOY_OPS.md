@@ -69,7 +69,7 @@ PlayCanvas 项目概况——纯文本、结构化，便于人读也便于再次
 ```bash
 $env:PEXELS_API_KEY  = "..."
 $env:PIXABAY_API_KEY = "..."
-python -m slotmcp.tools.fetch_media            # 抓取 6 款机台主题图
+python -m slotmcp.tools.fetch_media            # 抓取 7 款机台主题图
 python -m slotmcp.tools.fetch_media --only lucky_fruits --dry-run
 ```
 

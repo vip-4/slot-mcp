@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from typing import Dict, List, Optional, Sequence, Tuple
 
+from .config import GameConfig, PickBonusConfig
 from .evaluator import Position
 from .reels import Grid, ReelStripSet
 from .rng import SlotRNG
@@ -19,7 +20,38 @@ __all__ = [
     "cascade_collapse",
     "place_random_wilds",
     "collect_coins",
+    "resolve_pick_bonus",
 ]
+
+
+def resolve_pick_bonus(
+    cfg: GameConfig, pb: PickBonusConfig, picks: int, rng: SlotRNG
+) -> Tuple[List[str], float]:
+    """Pick'em 选择式奖励：按权重抽取奖品并累计奖励（总注倍数）。
+
+    返回 `(抽中的奖品列表, 累计奖励)`。`unique=True` 为无放回（抽过的奖品不再出现），
+    奖品抽完即提前结束；RNG 消耗与 JS 端一致（加权轮盘 + 顺序扫描）。
+    """
+    prizes = list(pb.prize_pool.keys())
+    weights = {p: max(0, int(pb.weights.get(p, 0))) for p in prizes}
+    chosen: List[str] = []
+    total = 0.0
+    for _ in range(max(0, int(picks))):
+        candidates = [p for p in prizes if p not in chosen] if pb.unique else list(prizes)
+        remaining = sum(weights.get(p, 0) for p in candidates)
+        if not candidates or remaining <= 0:
+            break
+        target = rng.random() * remaining
+        acc = 0
+        picked = candidates[-1]
+        for p in candidates:
+            acc += weights.get(p, 0)
+            if target < acc:
+                picked = p
+                break
+        chosen.append(picked)
+        total += float(pb.prize_pool.get(picked, 0.0))
+    return chosen, round(total * float(pb.award_multiplier), 6)
 
 
 def place_random_wilds(

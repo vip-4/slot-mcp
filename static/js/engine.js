@@ -141,6 +141,61 @@
     return out;
   }
 
+  // Pick'em：与 Python 端 resolve_pick_bonus 同构（加权轮盘 + 顺序扫描）
+  function resolvePickBonus(cfg, pb, picks, rng) {
+    var prizes = Object.keys(pb.prize_pool || {});
+    var chosen = [];
+    var total = 0;
+    for (var k = 0; k < (picks | 0); k++) {
+      var candidates = pb.unique ? prizes.filter(function (p) { return chosen.indexOf(p) < 0; }) : prizes.slice();
+      if (!candidates.length) break;
+      var remaining = 0;
+      candidates.forEach(function (p) { remaining += Math.max(0, (pb.weights || {})[p] | 0); });
+      if (remaining <= 0) break;
+      var target = rng.random() * remaining;
+      var acc = 0;
+      var picked = candidates[candidates.length - 1];
+      for (var i = 0; i < candidates.length; i++) {
+        acc += Math.max(0, (pb.weights || {})[candidates[i]] | 0);
+        if (target < acc) {
+          picked = candidates[i];
+          break;
+        }
+      }
+      chosen.push(picked);
+      total += Number((pb.prize_pool || {})[picked] || 0);
+    }
+    return { picked: chosen, total: Math.round(total * Number(pb.award_multiplier || 1.0) * 1e6) / 1e6 };
+  }
+
+  function pickBonusAward(machine, cfg, ctx, grid) {
+    var pb = cfg.features.pick_bonus;
+    if (!pb || !pb.enabled) return null;
+    var count = 0;
+    grid.forEach(function (col) {
+      col.forEach(function (s) {
+        if (s === pb.trigger_symbol) count++;
+      });
+    });
+    var picks = Number((pb.trigger_counts || {})[count] || 0);
+    if (picks <= 0) return null;
+    var res = resolvePickBonus(cfg, pb, picks, machine.rng);
+    if (res.total <= 0) return null;
+    var amount = Math.round(res.total * ctx.totalBet * 1e6) / 1e6;
+    return {
+      picked: res.picked,
+      win: {
+        kind: 'pick_bonus',
+        symbol: pb.trigger_symbol,
+        count: res.picked.length,
+        positions: [],
+        baseAmount: amount,
+        amount: amount,
+        label: '选宝 ' + res.picked.length + ' 次：' + res.picked.join(' / ')
+      }
+    };
+  }
+
   // 随机 Wild 投放与 Python 端 place_random_wilds 完全同构（含 RNG 消耗顺序）
   function placeRandomWilds(grid, symbolId, count, rng, excludeReels, protectedSymbols) {
     if (count <= 0) return [];
@@ -299,13 +354,28 @@
     return best;
   }
 
-  function wildMultiplier(cfg, seq) {
-    var mult = 1.0;
+  // 倍率 Wild：与 Python 端 _wild_multiplier 同构（未启用时退回符号自带倍率取最大）
+  function wildMultiplier(cfg, seq, mode) {
+    var mw = cfg.features.multiplier_wild;
+    var applyTo = (mw && mw.apply_to) || ['line', 'ways'];
+    var enabled = !!(mw && mw.enabled && applyTo.indexOf(mode || 'line') >= 0);
+    var values = [];
     for (var i = 0; i < seq.length; i++) {
       var s = cfg.symbols[seq[i]];
-      if (s && s.kind === 'wild' && s.multiplier > 1.0) mult = Math.max(mult, s.multiplier);
+      if (!s || s.kind !== 'wild') continue;
+      var v = enabled ? Number((mw.symbols || {})[seq[i]] || 1.0) : Number(s.multiplier || 1.0);
+      if (v > 1.0) values.push(v);
     }
-    return mult;
+    if (!values.length) return 1.0;
+    if (!enabled) return Math.max.apply(null, values);
+    var combine = mw.combine || 'max';
+    if (combine === 'sum') {
+      return values.reduce(function (acc, v) { return acc + (v - 1.0); }, 1.0);
+    }
+    if (combine === 'product') {
+      return values.reduce(function (acc, v) { return acc * Math.max(1.0, v); }, 1.0);
+    }
+    return Math.max.apply(null, values);
   }
 
   function scanLine(cfg, cells, ps) {
@@ -351,7 +421,7 @@
       var sym = cfg.symbols[scan.symbol];
       var pay = sym.pays[scan.count];
       if (!pay) continue;
-      var mult = wildMultiplier(cfg, scan.seq) * Math.max(1.0, baseMultiplier || 1.0);
+      var mult = wildMultiplier(cfg, scan.seq, 'line') * Math.max(1.0, baseMultiplier || 1.0);
       var positions = [];
       for (var p = 0; p < scan.count; p++) positions.push([p, line[p]]);
       events.push({
@@ -390,7 +460,10 @@
       if (matched < 2) return;
       var pay = cfg.symbols[id].pays[matched];
       if (!pay) return;
-      var mult = Math.max(1.0, baseMultiplier || 1.0);
+      var wildSeq = hits
+        .filter(function (p) { return isWild(cfg, grid[p[0]][p[1]]); })
+        .map(function (p) { return grid[p[0]][p[1]]; });
+      var mult = wildMultiplier(cfg, wildSeq, 'ways') * Math.max(1.0, baseMultiplier || 1.0);
       events.push({
         kind: 'ways',
         symbol: id,
@@ -675,7 +748,7 @@
       var multiplier = st.fsMultiplier * st.cascadeMultiplier;
       var wins = evaluateGrid(cfg, grid, ctx, multiplier);
       var events = guard === 0 ? (extraEvents || []).slice() : [];
-      // Cash Collect 只对「新鲜网格」结算：级联派生网格会让同一枚币被重复收取
+      // Cash Collect / Pick'em 只对「新鲜网格」结算：级联派生网格会重复派发
       if (guard === 0) {
         var award = collectAward(cfg, st.phase, ctx, grid);
         if (award) {
@@ -686,6 +759,11 @@
             coins: award.count,
             amount: award.amount
           });
+        }
+        var pick = pickBonusAward(this, cfg, ctx, grid);
+        if (pick) {
+          wins.push(pick.win);
+          events.push({ type: 'pick_bonus', picks: pick.picked, award: pick.win.amount });
         }
       }
       var stepWin = 0;

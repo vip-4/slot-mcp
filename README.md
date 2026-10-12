@@ -1,6 +1,6 @@
 # Blender Slot MCP —— SLOT 游戏合集
 
-在现有 **Blender MCP** 框架中用同一套 **CONFIG 引擎** 驱动 **6 款热门 SLOT 机台**，
+在现有 **Blender MCP** 框架中用同一套 **CONFIG 引擎** 驱动 **7 款热门 SLOT 机台**，
 机台之间互不复制代码：差异全部落在配置里，引擎、MCP 工具、Blender 插件、Web 前端共用一套接口。
 
 ```
@@ -30,13 +30,14 @@ blender-slot-mcp/
 │   │   ├── game.py               #   状态机主循环 + 机台注册表（统一入口）
 │   │   ├── session.py            #   玩家钱包、下注档位、博彩
 │   │   └── simulator.py          #   RTP / 波动率蒙特卡洛仿真
-│   ├── games/                    # 6 款机台：唯一的差异来源
+│   ├── games/                    # 7 款机台：唯一的差异来源
 │   │   ├── lucky_fruits.py       #   3x3  ·  5 线    · 低波动 · 红黑博彩
 │   │   ├── candy_carnival.py     #   5x3  · 20 线   · 中波动 · 扩展 Wild + 重转
 │   │   ├── dragon_palace.py      #   5x4  · 50 线   · 高波动 · 免费旋转 + 粘性 Wild
 │   │   ├── pharaoh_tomb.py       #   5x3  · 243 Ways· 中高波 · Hold & Win 奖池
 │   │   ├── star_expedition.py    #   6x4  · 4096Ways· 高波动 · 级联倍率 + 免费旋转
-│   │   └── fortune_koi.py        #   5x3  · 20 线   · 中高波 · 随机 Wild + Cash Collect
+│   │   ├── fortune_koi.py        #   5x3  · 20 线   · 中高波 · 随机 Wild + Cash Collect
+│   │   └── thunder_temple.py     #   5x3  · 20 线   · 高波动 · 倍率 Wild + Pick'em 选宝
 │   ├── mcp/
 │   │   ├── server.py             #   stdio JSON-RPC 2.0 服务端
 │   │   ├── tools.py              #   15 个 MCP 工具 + 会话仓库
@@ -140,7 +141,7 @@ python -m slotmcp.ui.http_api --port 8787
 | `POST /api/simulate` | 触发一次 RTP 仿真 |
 | `POST /api/blender/build` `/api/blender/animate` | 转发给 Blender 插件 |
 
-## 5. 六款机台的实测量化（20 万局 / bet=1）
+## 5. 七款机台的实测量化（20 万局 / bet=1）
 
 | 机台 | 结构 | 核心机制 | RTP | 命中率 | 波动率 | 最大倍率 | 特性触发 |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -150,9 +151,11 @@ python -m slotmcp.ui.http_api --port 8787
 | pharaoh_tomb | 5x3 · 243 Ways | Hold & Win 重转 + MINI~MAJOR + 全屏大奖 | 95.40% | 49.8% | 8.53 | 519.2x | 1/346 局 |
 | star_expedition | 6x4 · 4096 Ways | 级联倍率 + 免费旋转 | 95.78% | 80.7% | 4.21 | 244.7x | 1/170 局 |
 | **fortune_koi** | 5x3 · 20 线 | **随机 Wild 投放 + Cash Collect 金币收集** + 免费旋转（收集 ×2） | **96.76%** | 67.9% | 4.70 | 188.9x | 1/62.6 局 |
+| **thunder_temple** | 5x3 · 20 线 | **倍率 Wild（×2/×3 相加） + Pick'em 选雷石** + 免费旋转 | **96.99%** | 51.5% | 6.03 | 358.9x | 1/137 局 |
 
 目标 RTP 统一 96%，容差默认 ±2%（dragon_palace 因高波动设为 ±3%）。
-`fortune_koi` 的贡献拆分：线赔 ≈47% / 收集 ≈43% / Scatter 直付 ≈6%。
+`fortune_koi` 的贡献拆分：线赔 ≈47% / 收集 ≈43% / Scatter 直付 ≈6%；
+`thunder_temple` 为线赔 ≈79% / 选宝 ≈15% / Scatter ≈6%。
 
 ## 6. 新增一台机台（不需要改任何引擎代码）
 

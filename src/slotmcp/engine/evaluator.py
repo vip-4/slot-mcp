@@ -89,13 +89,26 @@ def _best_symbol_for_count(cfg: GameConfig, count: int) -> Optional[str]:
     return candidates[0][1]
 
 
-def _wild_multiplier(cfg: GameConfig, seq: List[str]) -> float:
-    mult = 1.0
+def _wild_multiplier(cfg: GameConfig, seq: List[str], mode: str = "line") -> float:
+    """按 `features.multiplier_wild` 合并命中里所有倍率 Wild 的倍率。
+
+    未启用该特性时退回符号自带的 `multiplier`（取最大），因此现有机台行为不变。
+    """
+    mw = cfg.features.multiplier_wild
+    enabled = bool(mw and mw.enabled and mode in (mw.apply_to or ["line", "ways"]))
+    values: List[float] = []
     for sym_id in seq:
-        sym = cfg.symbols[sym_id]
-        if sym.kind == SymbolKind.WILD and sym.multiplier > 1.0:
-            mult = max(mult, sym.multiplier)
-    return mult
+        sym = cfg.symbols.get(sym_id)
+        if sym is None or sym.kind != SymbolKind.WILD:
+            continue
+        value = mw.multiplier_of(sym_id) if enabled else sym.multiplier
+        if value > 1.0:
+            values.append(float(value))
+    if not values:
+        return 1.0
+    if enabled:
+        return mw.combine_multipliers(values)
+    return max(values)
 
 
 def evaluate_lines(
@@ -123,7 +136,7 @@ def evaluate_lines(
         if not pay:
             continue
 
-        mult = _wild_multiplier(cfg, seq) * max(1.0, base_multiplier)
+        mult = _wild_multiplier(cfg, seq, "line") * max(1.0, base_multiplier)
         amount = pay * line_bet * mult
         events.append(
             WinEvent(
@@ -202,7 +215,13 @@ def evaluate_ways(cfg: GameConfig, grid: Grid, bet_per_way: float, base_multipli
         pay = cfg.symbols[symbol_id].pays.get(matched_reels)
         if not pay:
             continue
-        mult = max(1.0, base_multiplier)
+        # 参与本次命中的 Wild（含倍率 Wild）一并计入倍率
+        wild_seq = [
+            grid[reel_idx][row]
+            for reel_idx, row in hits
+            if _is_wild(cfg, grid[reel_idx][row])
+        ]
+        mult = _wild_multiplier(cfg, wild_seq, "ways") * max(1.0, base_multiplier)
         events.append(
             WinEvent(
                 kind="ways",

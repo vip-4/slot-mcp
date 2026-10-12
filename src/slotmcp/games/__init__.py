@@ -20,6 +20,7 @@ from . import (
     lucky_fruits,
     pharaoh_tomb,
     star_expedition,
+    thunder_temple,
 )
 
 __all__ = [
@@ -34,6 +35,7 @@ __all__ = [
     "lucky_fruits",
     "pharaoh_tomb",
     "star_expedition",
+    "thunder_temple",
 ]
 
 _BUILDERS: Dict[str, Callable[[], GameConfig]] = {
@@ -43,6 +45,7 @@ _BUILDERS: Dict[str, Callable[[], GameConfig]] = {
     pharaoh_tomb.GAME_ID: pharaoh_tomb.build_config,
     star_expedition.GAME_ID: star_expedition.build_config,
     fortune_koi.GAME_ID: fortune_koi.build_config,
+    thunder_temple.GAME_ID: thunder_temple.build_config,
 }
 
 

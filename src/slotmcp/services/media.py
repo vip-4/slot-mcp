@@ -60,6 +60,11 @@ THEME_QUERIES: Dict[str, Dict[str, str]] = {
         "pixabay": "koi pond lotus",
         "alt": "锦鲤纳福机台主题图：锦鲤池塘与莲花",
     },
+    "thunder_temple": {
+        "pexels": "thunderstorm lightning dark sky",
+        "pixabay": "lightning thunder storm",
+        "alt": "雷霆神殿机台主题图：雷暴与闪电",
+    },
 }
 
 HERO_SIZE = (960, 540)

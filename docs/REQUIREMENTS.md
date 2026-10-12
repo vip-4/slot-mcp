@@ -1,6 +1,6 @@
 # SLOT 游戏合集 —— 开发任务说明（完善版）
 
-> 目标：在现有 **Blender MCP** 框架中，把「老虎机能力」扩展为一个 **6 款 SLOT 游戏合集**，
+> 目标：在现有 **Blender MCP** 框架中，把「老虎机能力」扩展为一个 **7 款 SLOT 游戏合集**，
 > 并且让多主题机台**共用同一套 CONFIG 引擎**。本文档在原需求基础上补充了功能范围、
 > 非功能约束、实现方向、依赖说明、集成步骤与验收标准，可直接作为开发任务拆解的依据。
 
@@ -16,8 +16,9 @@
 
 在此之上追加的关键约束：**多主题机台共用同一套 CONFIG 引擎**，而不是每台机台一套运算代码。
 
-本轮已完成的新增项：**第 6 台「锦鲤纳福 `fortune_koi`」**，并借它把两个热门机制
-（随机 Wild 投放、Cash Collect）沉淀为**通用配置算子**，供后续机台直接复用。
+本轮已完成的新增项：**第 6 台「锦鲤纳福 `fortune_koi`」与第 7 台「雷霆神殿 `thunder_temple`」**，
+并借它们把四个热门机制（随机 Wild 投放、Cash Collect、倍率 Wild、Pick'em 选宝）
+沉淀为**通用配置算子**，供后续机台直接复用。
 
 ---
 
@@ -27,15 +28,15 @@
 
 | 编号 | 目标 | 验收方式 |
 | --- | --- | --- |
-| G1 | 6 款主题各异的 SLOT 机台 | `slot_list_games` 返回 6 台：`lucky_fruits / candy_carnival / dragon_palace / pharaoh_tomb / star_expedition / fortune_koi` |
+| G1 | 7 款主题各异的 SLOT 机台 | `slot_list_games` 返回 7 台：`lucky_fruits / candy_carnival / dragon_palace / pharaoh_tomb / star_expedition / fortune_koi / thunder_temple` |
 | G2 | 机台之间复用一套 CONFIG 引擎 | 引擎目录内不存在任何按 `game_id` 的分支；新增机台只加配置文件 |
-| G3 | 覆盖主流机制：固定线 / Ways / 级联 / 扩展 Wild / 粘性 Wild / 免费旋转 / Hold&Win / 博彩 / **随机 Wild** / **Cash Collect** | 每台至少启用一种特性；机制分布见 `docs/GAMES.md` 的覆盖矩阵 |
+| G3 | 覆盖主流机制：固定线 / Ways / 级联 / 扩展 Wild / 粘性 Wild / 免费旋转 / Hold&Win / 博彩 / **随机 Wild** / **Cash Collect** / **倍率 Wild** / **Pick'em 选宝** | 每台至少启用一种特性；机制分布见 `docs/GAMES.md` 的覆盖矩阵 |
 | G4 | 统一入口 + 可配置参数 | `SlotMachine.spin()` 唯一入口；`config.set_parameter()` 支持点号路径热更新 |
 | G5 | 统一 RTP 目标 96% | `verify_rtp` 20 万局全部在容差内（默认 ±2%） |
 | G6 | 通过 MCP 服务暴露全部能力 | 15 个工具可调用，错误收敛不中断会话 |
 | G7 | 与 Blender 端通信稳定 | 桥接具备封帧、超时、心跳、自动重连；Blender 未启动时降级而非崩溃 |
 | G8 | Web 前端 + 静态站两种形态 | 一套界面玩全部机台；`static/` 可零后端静态托管（已上线 GitHub Pages） |
-| G9 | 新机制可复用 | 随机 Wild / Cash Collect 均为配置算子，任一新机台开启即可，无需改引擎 |
+| G9 | 新机制可复用 | 随机 Wild / Cash Collect / 倍率 Wild / Pick'em 均为配置算子，任一新机台开启即可，无需改引擎 |
 
 ### 1.2 非目标（Out of Scope）
 
@@ -62,7 +63,7 @@
 | `session.py` | 钱包、下注档位、博彩 | 与实际对局共用同一 `spin()`，RTP 口径一致 |
 | `simulator.py` | RTP / 波动率 / 命中率 / 特性频率仿真 | 复用线上代码路径，避免「仿真与实测两套数学」 |
 
-### 2.2 六款机台（配置层）
+### 2.2 七款机台（配置层）
 
 | 机台 | 结构 | 特殊符号 | 奖励触发 | 实测 RTP / 波动 |
 | --- | --- | --- | --- | --- |
@@ -72,6 +73,7 @@
 | 法老之墓 `pharaoh_tomb` | 5x3 · 243 Ways | 金币赏金 + MINI/MINOR/MAJOR 奖池 | 8 个赏金符号 → 宝箱重转 | 95.40% / 高 |
 | 星际远征 `star_expedition` | 6x4 · 4096 Ways | 星门 Wild；黑洞 Scatter | 级联倍率递增（封顶 10x）+ 免费旋转 | 95.78% / 中高 |
 | **锦鲤纳福 `fortune_koi`** | 5x3 · 20 线 | 锦鲤 Wild **兼收集者**；莲花 Scatter；四档币值符号 | **随机 Wild 投放** + **Cash Collect** + 免费旋转（8/12/16，倍率 1/1/2/3/5） | **96.76% / 中高** |
+| **雷霆神殿 `thunder_temple`** | 5x3 · 20 线 | 雷锤 Wild ×2 / ×3；雷石（选宝触发）；神殿之门 Scatter | **倍率 Wild**（相加合并）+ **Pick'em 选雷石**（3~5 次）+ 免费旋转（10/15/20，倍率 1/2/3/5） | **96.99% / 高** |
 
 ### 2.3 新增机台的机制定义（可作为后续机台模板）
 
@@ -145,8 +147,9 @@ slot-mcp/
 │   │   ├── config.py           #   含 RandomWildConfig / CollectConfig
 │   │   ├── features.py         #   place_random_wilds / collect_coins
 │   │   └── game.py             #   统一入口 spin()
-│   ├── games/                  # 6 款机台配置 + 注册表
-│   │   └── fortune_koi.py      #   第 6 台：随机 Wild + Cash Collect + 免费旋转
+│   ├── games/                  # 7 款机台配置 + 注册表
+│   │   ├── fortune_koi.py      #   第 6 台：随机 Wild + Cash Collect + 免费旋转
+│   │   └── thunder_temple.py   #   第 7 台：倍率 Wild + Pick'em 选宝 + 免费旋转
 │   ├── mcp/                    # stdio 服务端 / 15 个工具 / Blender 桥接
 │   ├── ui/http_api.py          # REST + 静态托管（动态形态）
 │   ├── services/               # 外部服务客户端（邮件/定时/三维/图片/GEO/数据库/发布）
@@ -246,7 +249,7 @@ slot-mcp/
 | M4 | 补齐至 5 台并完成 RTP 调参 | 5 台均在容差内 |
 | M5 | MCP 服务层 + Blender 桥接 + Web 前端 | 15 个工具、插件、界面可用 |
 | M6 | 静态站形态 + SEO/GEO + 发布与运维 | `static/` 上线 GitHub Pages，巡检/邮件/审计打通 |
-| M7 | **第 6 台 + 新机制通用化** | `RandomWildConfig` / `CollectConfig` 沉淀为算子；`fortune_koi` 过 20 万局校验；前后端一致 |
+| M7 | **第 6/7 台 + 新机制通用化** | `RandomWildConfig` / `CollectConfig` / `MultiplierWildConfig` / `PickBonusConfig` 沉淀为算子；两台新机台过 20 万局校验；前后端一致 |
 
 ---
 

@@ -1,0 +1,22 @@
+{
+  "mcpServers": {
+    "blender-slot": {
+      "command": "python",
+      "args": ["-m", "slotmcp.mcp.server"],
+      "env": {
+        "PYTHONPATH": "<仓库绝对路径>/src",
+        "SLOT_MCP_BLENDER_HOST": "127.0.0.1",
+        "SLOT_MCP_BLENDER_PORT": "8765",
+        "SLOT_MCP_BLENDER_TIMEOUT": "10"
+      },
+      "disabled": false,
+      "alwaysAllow": [
+        "slot_list_games",
+        "slot_get_game",
+        "slot_spin",
+        "slot_simulate",
+        "blender_status"
+      ]
+    }
+  }
+}

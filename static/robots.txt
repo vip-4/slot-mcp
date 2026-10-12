@@ -1,0 +1,5 @@
+User-agent: *
+Allow: /
+
+# 纯静态站点：所有页面均可被抓取，游戏内容同时以静态 HTML 输出，无需执行 JavaScript
+Sitemap: https://vip882.gitee.io/slot-games/sitemap.xml

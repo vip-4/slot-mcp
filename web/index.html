@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Blender Slot MCP · SLOT 机台合集</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="logo">🎰</span>
+      <div>
+        <h1>SLOT 机台合集</h1>
+        <p id="game-description">加载中…</p>
+      </div>
+    </div>
+    <nav class="tabs" id="game-tabs"></nav>
+    <div class="topbar-right">
+      <div class="chip" id="blender-chip" title="Blender 桥接状态">
+        <span class="dot"></span><span id="blender-text">Blender 检测中</span>
+      </div>
+      <div class="wallet">
+        <small>余额</small>
+        <strong id="credits">0.00</strong>
+      </div>
+    </div>
+  </header>
+
+  <main class="layout">
+    <!-- 左侧：赔率表与机台信息 -->
+    <aside class="panel paytable-panel">
+      <h2>机台参数</h2>
+      <dl class="meta" id="meta-list"></dl>
+      <h2>赔率表</h2>
+      <table class="paytable" id="paytable">
+        <thead><tr><th>符号</th><th id="pay-head">3 / 4 / 5 连</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <h2>特性</h2>
+      <ul class="feature-list" id="feature-list"></ul>
+    </aside>
+
+    <!-- 中间：机台 -->
+    <section class="machine">
+      <div class="stage" id="stage">
+        <div class="reels" id="reels"></div>
+        <div class="overlay" id="overlay" hidden>
+          <div class="overlay-card">
+            <span class="overlay-icon" id="overlay-icon">🎉</span>
+            <h3 id="overlay-title"></h3>
+            <p id="overlay-text"></p>
+          </div>
+        </div>
+      </div>
+
+      <div class="stepbar">
+        <span class="badge" id="step-badge">准备就绪</span>
+        <span class="win-amount" id="step-win"></span>
+      </div>
+
+      <div class="controls">
+        <div class="bet">
+          <button class="ghost" id="bet-down">−</button>
+          <div class="bet-value">
+            <small>下注</small>
+            <strong id="bet-amount">1.00</strong>
+          </div>
+          <button class="ghost" id="bet-up">＋</button>
+        </div>
+        <button class="primary" id="spin-btn">SPIN</button>
+        <button class="ghost" id="auto-btn">AUTO</button>
+        <button class="ghost" id="paytable-btn">赔率</button>
+      </div>
+
+      <div class="blender-actions">
+        <button class="ghost small" id="build-btn">构建 3D 机台</button>
+        <button class="ghost small" id="animate-btn">播放 Blender 动画</button>
+        <span id="blender-note" class="note"></span>
+      </div>
+    </section>
+
+    <!-- 右侧：记录 -->
+    <aside class="panel log-panel">
+      <div class="panel-head">
+        <h2>最近记录</h2>
+        <button class="ghost small" id="clear-log">清空</button>
+      </div>
+      <ul class="log" id="log"></ul>
+      <h2>会话状态</h2>
+      <dl class="meta" id="state-list"></dl>
+    </aside>
+  </main>
+
+  <!-- 博彩弹窗 -->
+  <div class="modal" id="gamble-modal" hidden>
+    <div class="modal-card">
+      <h3>红黑翻倍</h3>
+      <p>当前奖金：<strong id="gamble-stake">0.00</strong></p>
+      <div class="gamble-buttons">
+        <button class="red" id="gamble-red">红 ♥</button>
+        <button class="black" id="gamble-black">黑 ♠</button>
+      </div>
+      <button class="ghost" id="gamble-take">收下奖金</button>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

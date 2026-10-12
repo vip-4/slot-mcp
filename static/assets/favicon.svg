@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="SLOT">
+  <defs><linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#3d1c6b"/><stop offset="1" stop-color="#150d26"/>
+  </linearGradient></defs>
+  <rect x="4" y="4" width="56" height="56" rx="12" fill="url(#g)" stroke="#ffcc33" stroke-width="3"/>
+  <rect x="13" y="18" width="12" height="28" rx="4" fill="#0d0819" stroke="#ffcc33" stroke-width="2"/>
+  <rect x="26" y="18" width="12" height="28" rx="4" fill="#0d0819" stroke="#ffcc33" stroke-width="2"/>
+  <rect x="39" y="18" width="12" height="28" rx="4" fill="#0d0819" stroke="#ffcc33" stroke-width="2"/>
+  <circle cx="19" cy="32" r="4" fill="#ff6b81"/>
+  <circle cx="32" cy="32" r="4" fill="#7cf6c8"/>
+  <circle cx="45" cy="32" r="4" fill="#ffcc33"/>
+</svg>

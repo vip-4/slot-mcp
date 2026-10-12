@@ -1,0 +1,15 @@
+# 可选依赖（仅在你想增强特定能力时安装）
+
+# 1) 使用官方 MCP Python SDK 管理服务生命周期（本项目自带 stdio 实现，非必需）
+mcp >= 1.0.0
+
+# 2) 大规模仿真加速（百万级以上）
+numpy >= 1.24
+
+# 3) 想把 UI 换成 ASGI 部署（uvicorn + 内置 app）
+fastapi >= 0.110
+uvicorn >= 0.27
+
+# 4) 打包发布到内网 PyPI
+build >= 1.0.0
+twine >= 4.0.0

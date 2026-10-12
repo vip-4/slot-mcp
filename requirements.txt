@@ -1,0 +1,6 @@
+# 运行本项目**不依赖任何第三方包**：只用 Python 标准库即可跑通
+# 5 款机台、MCP 服务、Blender 插件、Web UI 全部零依赖安装即可运行。
+python >= 3.10
+
+# 仅当使用 bcrypt 版 session、或想让 Fanbook/Claude Desktop 自带 SDK 管理会话时才需要：
+# mcp >= 1.0.0

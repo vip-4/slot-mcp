@@ -1,0 +1,35 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "blender-slot-mcp"
+version = "1.0.0"
+description = "在 Blender MCP 框架中扩展的 SLOT 游戏合集：一套共用 CONFIG 引擎驱动 5 款多主题机台"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [{ name = "Blender Slot MCP" }]
+keywords = ["blender", "mcp", "slot", "game", "rtp"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+# 核心依赖为零：只用标准库即可运行
+dependencies = []
+
+[project.optional-dependencies]
+optional = ["numpy>=1.24", "build>=1.0.0"]
+dev = ["numpy>=1.24"]
+
+[project.scripts]
+slot-mcp = "slotmcp.mcp.server:main"
+slot-ui = "slotmcp.ui.http_api:main"
+slot-verify = "slotmcp.tools.verify_rtp:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+slotmcp = ["py.typed"]

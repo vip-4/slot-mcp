@@ -1,0 +1,65 @@
+"""内置 5 款 SLOT 机台。
+
+新增机台只需两步：
+1. 在本包下新建 `<game_id>.py`，实现 `build_config() -> GameConfig`（可导出 `CONFIG`）；
+2. 在下方 `_BUILDERS` 中登记。
+
+引擎侧不需要任何改动。
+"""
+
+from __future__ import annotations
+
+from typing import Callable, Dict, Iterator, List
+
+from ..engine.config import GameConfig
+
+from . import candy_carnival, dragon_palace, lucky_fruits, pharaoh_tomb, star_expedition
+
+__all__ = [
+    "build_config",
+    "build_all",
+    "iter_game_configs",
+    "game_ids",
+    "export_config_json",
+    "candy_carnival",
+    "dragon_palace",
+    "lucky_fruits",
+    "pharaoh_tomb",
+    "star_expedition",
+]
+
+_BUILDERS: Dict[str, Callable[[], GameConfig]] = {
+    lucky_fruits.GAME_ID: lucky_fruits.build_config,
+    candy_carnival.GAME_ID: candy_carnival.build_config,
+    dragon_palace.GAME_ID: dragon_palace.build_config,
+    pharaoh_tomb.GAME_ID: pharaoh_tomb.build_config,
+    star_expedition.GAME_ID: star_expedition.build_config,
+}
+
+
+def game_ids() -> List[str]:
+    return sorted(_BUILDERS)
+
+
+def build_config(game_id: str) -> GameConfig:
+    if game_id not in _BUILDERS:
+        raise KeyError(f"未知机台: {game_id}（可用: {', '.join(game_ids())}）")
+    return _BUILDERS[game_id]()
+
+
+def build_all() -> Dict[str, GameConfig]:
+    return {gid: builder() for gid, builder in _BUILDERS.items()}
+
+
+def iter_game_configs() -> Iterator[GameConfig]:
+    for gid in game_ids():
+        yield _BUILDERS[gid]()
+
+
+def export_config_json(indent: int = 2) -> str:
+    """导出全部机台配置为 JSON 数组，便于落盘到 `configs/` 目录做版本管理。"""
+    import json
+
+    return json.dumps(
+        [cfg.to_dict() for cfg in iter_game_configs()], ensure_ascii=False, indent=indent
+    )

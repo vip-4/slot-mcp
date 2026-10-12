@@ -126,7 +126,7 @@ def run_github(cfg: Dict[str, Any], src: Path, dry_run: bool) -> Dict[str, Any]:
 
     repo, state = client.ensure_repo(
         cfg["project"],
-        description="8 款免费在线老虎机：纯静态站（SEO + GEO 优化），统一 CONFIG 引擎驱动",
+        description="9 款免费在线老虎机：纯静态站（SEO + GEO 优化），统一 CONFIG 引擎驱动",
         homepage="",
     )
     if repo is None:

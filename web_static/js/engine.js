@@ -196,6 +196,61 @@
     };
   }
 
+  // 神秘符号揭示：与 Python 端 reveal_mystery_symbols 同构
+  // reveal_all_same=true 时全屏揭示为同一符号（只消耗 1 个随机数）；
+  // 否则按「轴优先、行次之」的扫描顺序逐格独立揭示。
+  function revealMysterySymbols(grid, ms, rng, phase) {
+    if (!ms || !ms.enabled) return null;
+    var phases = ms.phases || ['base', 'free_spins'];
+    if (phases.indexOf(phase) < 0) return null;
+    var positions = [];
+    for (var r = 0; r < grid.length; r++) {
+      for (var c = 0; c < grid[r].length; c++) {
+        if (grid[r][c] === ms.symbol) positions.push([r, c]);
+      }
+    }
+    if (!positions.length) return null;
+    var ids = Object.keys(ms.reveal_symbols || {}).filter(function (s) {
+      return Number(ms.reveal_symbols[s]) > 0;
+    });
+    var total = 0;
+    ids.forEach(function (s) {
+      total += Number(ms.reveal_symbols[s]) || 0;
+    });
+    if (total <= 0) return null;
+
+    function draw() {
+      var t = rng.random() * total;
+      var acc = 0;
+      var picked = ids[ids.length - 1];
+      for (var i = 0; i < ids.length; i++) {
+        acc += Number(ms.reveal_symbols[ids[i]]) || 0;
+        if (t < acc) {
+          picked = ids[i];
+          break;
+        }
+      }
+      return picked;
+    }
+
+    var revealed;
+    if (ms.reveal_all_same) {
+      revealed = draw();
+      positions.forEach(function (p) {
+        grid[p[0]][p[1]] = revealed;
+      });
+    } else {
+      var list = positions.map(function () {
+        return draw();
+      });
+      positions.forEach(function (p, idx) {
+        grid[p[0]][p[1]] = list[idx];
+      });
+      revealed = list.join(',');
+    }
+    return { type: 'mystery_reveal', symbol: revealed, count: positions.length, positions: positions };
+  }
+
   // 巨符号投放：与 Python 端 place_colossal_symbol 同构
   // 抽样顺序：块尺寸 -> 最左轴 -> 最上排 -> 符号；块内撞到受保护符号则放弃本次投放
   function placeColossalSymbol(grid, cfg, cc, rng, phase) {
@@ -700,6 +755,13 @@
     if (cs && cs.enabled) {
       var block = placeColossalSymbol(grid, cfg, cs, this.rng, st.phase);
       if (block) stepEvents.push(block);
+    }
+
+    // 神秘符号揭示：顺序与 Python 一致（巨符号之后、随机 Wild 之前）
+    var ms = cfg.features.mystery;
+    if (ms && ms.enabled) {
+      var revealed = revealMysterySymbols(grid, ms, this.rng, st.phase);
+      if (revealed) stepEvents.push(revealed);
     }
 
     // 随机 Wild 投放：顺序与 Python 一致（替代计算前、触发判定前）

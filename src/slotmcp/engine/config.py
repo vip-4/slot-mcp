@@ -575,6 +575,45 @@ class ColossalSymbolConfig:
 
 
 @dataclass
+class MysterySymbolConfig:
+    """神秘符号（Mystery Symbol）：结算前把屏上的占位符号揭示为同一个随机符号。
+
+    * `symbol`：占位符号（通常为 `kind=bonus`，本身不参与线赔）
+    * `reveal_symbols`：可揭示的目标符号 -> 权重（**必须包含 Wild 才可能揭示为 Wild**）
+    * `reveal_all_same`：True = 全屏神秘符号揭示为同一符号（经典玩法）；
+      False = 每个格子各自独立揭示（RNG 消耗顺序：轴优先、行次之）
+    * `phases`：生效阶段（base / free_spins）
+
+    RNG 消耗：`reveal_all_same=True` 时只抽 1 次；否则按扫描顺序每格抽 1 次。
+    """
+
+    enabled: bool = False
+    symbol: str = ""
+    reveal_symbols: Dict[str, int] = field(default_factory=dict)
+    reveal_all_same: bool = True
+    phases: List[str] = field(default_factory=lambda: ["base", "free_spins"])
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "enabled": self.enabled,
+            "symbol": self.symbol,
+            "reveal_symbols": dict(self.reveal_symbols),
+            "reveal_all_same": self.reveal_all_same,
+            "phases": list(self.phases),
+        }
+
+    @staticmethod
+    def from_dict(d: Dict[str, Any]) -> "MysterySymbolConfig":
+        return MysterySymbolConfig(
+            enabled=bool(d.get("enabled", False)),
+            symbol=d.get("symbol", ""),
+            reveal_symbols={k: int(v) for k, v in (d.get("reveal_symbols") or {}).items()},
+            reveal_all_same=bool(d.get("reveal_all_same", True)),
+            phases=list(d.get("phases") or ["base", "free_spins"]),
+        )
+
+
+@dataclass
 class GambleConfig:
     enabled: bool = False
     max_steps: int = 5
@@ -613,6 +652,7 @@ class Features:
     multiplier_wild: Optional[MultiplierWildConfig] = None
     pick_bonus: Optional[PickBonusConfig] = None
     colossal: Optional[ColossalSymbolConfig] = None
+    mystery: Optional[MysterySymbolConfig] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -626,6 +666,7 @@ class Features:
             "multiplier_wild": self.multiplier_wild.to_dict() if self.multiplier_wild else None,
             "pick_bonus": self.pick_bonus.to_dict() if self.pick_bonus else None,
             "colossal": self.colossal.to_dict() if self.colossal else None,
+            "mystery": self.mystery.to_dict() if self.mystery else None,
         }
 
     @staticmethod
@@ -645,6 +686,7 @@ class Features:
             else None,
             pick_bonus=PickBonusConfig.from_dict(d["pick_bonus"]) if d.get("pick_bonus") else None,
             colossal=ColossalSymbolConfig.from_dict(d["colossal"]) if d.get("colossal") else None,
+            mystery=MysterySymbolConfig.from_dict(d["mystery"]) if d.get("mystery") else None,
         )
 
 
@@ -1029,6 +1071,27 @@ class GameConfig:
             for phase in cs.phases or []:
                 if phase not in ("base", "free_spins", "hold_win"):
                     errors.append(f"colossal.phases 非法: {phase}")
+
+        ms = self.features.mystery
+        if ms and ms.enabled:
+            if ms.symbol not in self.symbols:
+                errors.append(f"mystery.symbol 未定义: {ms.symbol}")
+            elif self.symbols[ms.symbol].kind is not SymbolKind.BONUS:
+                errors.append(f"mystery.symbol 必须是 bonus 类型（占位符号本身不赔付）: {ms.symbol}")
+            if not ms.reveal_symbols:
+                errors.append("mystery.reveal_symbols 不能为空")
+            for sym_id in ms.reveal_symbols:
+                if sym_id not in self.symbols:
+                    errors.append(f"mystery 引用未定义符号: {sym_id}")
+                elif self.symbols[sym_id].kind not in (SymbolKind.STANDARD, SymbolKind.WILD):
+                    errors.append(f"mystery 只能揭示为标准符号或 Wild: {sym_id}")
+            if ms.symbol in ms.reveal_symbols:
+                errors.append("mystery.reveal_symbols 不能包含占位符号自身（会死循环式覆盖）")
+            if any(int(v) <= 0 for v in ms.reveal_symbols.values()):
+                errors.append("mystery 揭示权重必须为正")
+            for phase in ms.phases or []:
+                if phase not in ("base", "free_spins", "hold_win"):
+                    errors.append(f"mystery.phases 非法: {phase}")
 
         ew = self.features.expanding_wild
         if ew:

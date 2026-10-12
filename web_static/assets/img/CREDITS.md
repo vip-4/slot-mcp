@@ -17,6 +17,8 @@
 | lucky_fruits | og | Pavel Danilyuk | https://www.pexels.com/photo/men-sitting-in-front-of-a-slot-machine-7594264/ | Pexels License（可免费商用，无需署名但建议署名） |
 | pharaoh_tomb | hero | Mauricio Artieda | https://www.pexels.com/photo/sculpture-and-carvings-in-ancient-tomb-in-egypt-17447963/ | Pexels License（可免费商用，无需署名但建议署名） |
 | pharaoh_tomb | og | Mauricio Artieda | https://www.pexels.com/photo/sculpture-and-carvings-in-ancient-tomb-in-egypt-17447963/ | Pexels License（可免费商用，无需署名但建议署名） |
+| phoenix_rebirth | hero | Nuh Isa El Carillo | https://www.pexels.com/photo/close-up-of-the-flame-in-the-fireplace-24868693/ | Pexels License（可免费商用，无需署名但建议署名） |
+| phoenix_rebirth | og | Nuh Isa El Carillo | https://www.pexels.com/photo/close-up-of-the-flame-in-the-fireplace-24868693/ | Pexels License（可免费商用，无需署名但建议署名） |
 | star_expedition | hero | Edvin Richardson | https://www.pexels.com/photo/space-shuttle-launch-during-nighttime-796206/ | Pexels License（可免费商用，无需署名但建议署名） |
 | star_expedition | og | Edvin Richardson | https://www.pexels.com/photo/space-shuttle-launch-during-nighttime-796206/ | Pexels License（可免费商用，无需署名但建议署名） |
 | thunder_temple | hero | alejandro penner | https://www.pexels.com/photo/lightning-strike-in-a-stormy-night-8964499/ | Pexels License（可免费商用，无需署名但建议署名） |

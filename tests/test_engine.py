@@ -33,7 +33,7 @@ def check(condition: bool, message: str) -> None:
 def test_configuration() -> None:
     print("[engine] 配置与校验")
     ids = game_ids()
-    check(len(ids) == 8, f"内置 8 款机台: {', '.join(ids)}")
+    check(len(ids) == 9, f"内置 9 款机台: {', '.join(ids)}")
     check("fortune_koi" in ids, "新增机台 fortune_koi 已注册")
     for cfg in iter_game_configs():
         errors = cfg.validate()
@@ -519,6 +519,165 @@ def test_colossal_config_validation() -> None:
     check(any("phases 非法" in e for e in errors), "非法阶段被拦截")
 
 
+def test_mystery_symbols() -> None:
+    print("[engine] 神秘符号（Mystery Symbol）")
+    from slotmcp.engine.config import MysterySymbolConfig
+    from slotmcp.engine.features import reveal_mystery_symbols
+
+    ph = get_registry().get("phoenix_rebirth")
+    cfg = ph.config
+    ms = cfg.features.mystery
+    check(ms is not None and ms.enabled, "phoenix_rebirth 启用神秘符号")
+    check(cfg.symbols[ms.symbol].kind.value == "bonus", "占位符号为 bonus（本身不参与线赔）")
+
+    # 全屏揭示为同一符号：只消耗 1 个随机数
+    grid = [["egg", "plume", "ash"], ["plume", "egg", "ash"], ["ash", "ash", "egg"]]
+    ev = reveal_mystery_symbols(grid, ms, SlotRNG("egg1"), "base")
+    check(ev is not None and ev["count"] == 3, f"三个蛋一次揭示：{ev}")
+    revealed = ev["symbol"]
+    check(
+        all(grid[r][c] == revealed for r, c in ev["positions"]),
+        "所有蛋揭示为同一符号",
+    )
+    check(revealed != "egg", "揭示结果不会是占位符号本身")
+
+    # 独立揭示模式：逐格抽取，允许出现不同结果
+    indie = MysterySymbolConfig(
+        enabled=True,
+        symbol="egg",
+        reveal_symbols={"plume": 1, "ash": 1},
+        reveal_all_same=False,
+    )
+    seen = set()
+    for i in range(40):
+        g = [[["egg", "egg"], ["egg", "egg"]] for _ in range(1)]
+        g = [["egg", "egg"], ["egg", "egg"]]
+        ev2 = reveal_mystery_symbols(g, indie, SlotRNG(f"i{i}"), "base")
+        assert ev2 is not None
+        seen.add(",".join(g[0] + g[1]))
+    check(len(seen) > 1, f"独立揭示时逐格抽取（出现 {len(seen)} 种组合）")
+
+    # 无蛋 / 阶段不匹配 -> 不产生事件
+    check(reveal_mystery_symbols([["plume"]], ms, SlotRNG("x"), "base") is None, "无占位符号时无事件")
+    only_base = MysterySymbolConfig(enabled=True, symbol="egg", reveal_symbols={"plume": 1}, phases=["base"])
+    check(
+        reveal_mystery_symbols([["egg"]], only_base, SlotRNG("y"), "free_spins") is None,
+        "不在生效阶段时不揭示",
+    )
+
+    # 端到端：事件可见，且网格与事件一致
+    ph.rng = SlotRNG("phoenix")
+    hit = 0
+    reveals: Dict[str, int] = {}
+    for _ in range(3000):
+        for step in ph.spin(total_bet=1.0).steps:
+            for e in step.events:
+                if e.get("type") == "mystery_reveal":
+                    hit += 1
+                    reveals[e["symbol"]] = reveals.get(e["symbol"], 0) + 1
+                    for r, c in e["positions"]:
+                        assert step.grid[r][c] == e["symbol"], "揭示后的网格应与事件一致"
+    check(hit > 0, f"端到端可触发神秘符号（{hit} 次）")
+    check(len(reveals) >= 3, f"揭示目标覆盖多种符号：{reveals}")
+    check("wild" in reveals, "可以揭示为 Wild（配置里给了权重）")
+
+    # 参数可调：把 Wild 权重调到 0 后不再揭示为 Wild
+    from slotmcp.engine.config import set_parameter as _set
+
+    _set(cfg, "features.mystery.reveal_symbols.wild", 0)
+    g = [["egg", "egg", "egg"] for _ in range(5)]
+    got_wild = False
+    for i in range(300):
+        gg = [["egg", "egg", "egg"] for _ in range(5)]
+        ev3 = reveal_mystery_symbols(gg, cfg.features.mystery, SlotRNG(f"w{i}"), "base")
+        if ev3 and ev3["symbol"] == "wild":
+            got_wild = True
+            break
+    _set(cfg, "features.mystery.reveal_symbols.wild", 10)
+    check(not got_wild, "slot_set_parameter 可把 Wild 权重调为 0 并即时生效")
+
+
+def test_mystery_config_validation() -> None:
+    print("[engine] 神秘符号配置校验")
+    from slotmcp.engine.config import Features, GameConfig, MysterySymbolConfig
+
+    base = dict(
+        id="bad_mystery",
+        name="bad",
+        reels=5,
+        rows=3,
+        symbols={
+            "plume": _sym("plume", "standard"),
+            "wild": _sym("wild", "wild"),
+            "scatter": _sym("scatter", "scatter"),
+        },
+        reel_sets={"base": _reel_set(["plume", "wild", "scatter"])},
+    )
+    bad = GameConfig(
+        features=Features(
+            mystery=MysterySymbolConfig(
+                enabled=True,
+                symbol="plume",  # 已定义但不是 bonus
+                reveal_symbols={"scatter": 1},  # 揭示目标非法
+                phases=["nonsense"],
+            )
+        ),
+        **base,
+    )
+    errors = bad.validate()
+    joined = " | ".join(errors)
+    check(any("必须是 bonus 类型" in e for e in errors), f"占位符号非 bonus 被拦截：{joined[:160]}")
+    check(any("mystery 只能揭示" in e for e in errors), "揭示目标含 Scatter 被拦截")
+
+    undef = GameConfig(
+        features=Features(
+            mystery=MysterySymbolConfig(enabled=True, symbol="ghost", reveal_symbols={"plume": 1})
+        ),
+        **base,
+    )
+    check(any("mystery.symbol 未定义" in e for e in undef.validate()), "占位符号未定义被拦截")
+
+    bad2 = GameConfig(
+        features=Features(
+            mystery=MysterySymbolConfig(
+                enabled=True,
+                symbol="egg",
+                reveal_symbols={"plume": 0},
+            )
+        ),
+        symbols=dict(base["symbols"], egg=_sym("egg", "bonus")),
+        reel_sets=base["reel_sets"],
+        id="bad_mystery2",
+        name="bad2",
+        reels=5,
+        rows=3,
+    )
+    errors2 = bad2.validate()
+    joined2 = " | ".join(errors2)
+    check(any("揭示权重必须为正" in e for e in errors2), f"非正权重被拦截：{joined2[:160]}")
+
+    bad3 = GameConfig(
+        features=Features(
+            mystery=MysterySymbolConfig(
+                enabled=True,
+                symbol="egg",
+                reveal_symbols={"egg": 1},
+                phases=["base", "nope"],
+            )
+        ),
+        symbols=dict(base["symbols"], egg=_sym("egg", "bonus")),
+        reel_sets=base["reel_sets"],
+        id="bad_mystery3",
+        name="bad3",
+        reels=5,
+        rows=3,
+    )
+    errors3 = bad3.validate()
+    joined3 = " | ".join(errors3)
+    check(any("不能包含占位符号自身" in e for e in errors3), f"自引用被拦截：{joined3[:160]}")
+    check(any("mystery.phases 非法" in e for e in errors3), "非法阶段被拦截")
+
+
 def test_session() -> None:
     print("[engine] 会话与钱包")
     machine = get_registry().get("lucky_fruits")
@@ -598,6 +757,8 @@ def main() -> int:
     test_new_feature_config_validation()
     test_colossal_symbols()
     test_colossal_config_validation()
+    test_mystery_symbols()
+    test_mystery_config_validation()
     test_session()
     test_hot_reload()
     test_rtp_regression()

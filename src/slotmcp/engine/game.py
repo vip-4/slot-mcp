@@ -24,6 +24,7 @@ from .features import (
     place_colossal_symbol,
     place_random_wilds,
     resolve_pick_bonus,
+    reveal_mystery_symbols,
 )
 from .reels import Grid, ReelStripSet
 from .rng import SlotRNG
@@ -349,6 +350,13 @@ class SlotMachine:
             block = place_colossal_symbol(grid, cfg, cs, self.rng, st.phase)
             if block:
                 step_events.append(block)
+
+        # 神秘符号揭示：在巨符号之后、随机 Wild 之前，保证后续判定看到最终网格
+        ms = cfg.features.mystery
+        if ms and ms.enabled:
+            revealed = reveal_mystery_symbols(grid, ms, self.rng, st.phase)
+            if revealed:
+                step_events.append(revealed)
 
         # 随机 Wild 投放：必须在「替代计算之前、触发判定之前」完成，
         # 这样它既能参与线赔，也能影响 Scatter/币值的可见性（但不会覆盖受保护符号）。

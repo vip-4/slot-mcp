@@ -96,6 +96,7 @@
         "gamble",
         "hold_win",
         "multiplier_wild",
+        "mystery",
         "pick_bonus",
         "random_wild"
       ]
@@ -188,6 +189,7 @@
         "gamble",
         "hold_win",
         "multiplier_wild",
+        "mystery",
         "pick_bonus",
         "random_wild"
       ]
@@ -271,6 +273,7 @@
         "gamble",
         "hold_win",
         "multiplier_wild",
+        "mystery",
         "pick_bonus",
         "random_wild"
       ]
@@ -391,6 +394,7 @@
         "gamble",
         "hold_win",
         "multiplier_wild",
+        "mystery",
         "pick_bonus",
         "random_wild"
       ]
@@ -474,6 +478,7 @@
         "gamble",
         "hold_win",
         "multiplier_wild",
+        "mystery",
         "pick_bonus",
         "random_wild"
       ]
@@ -578,6 +583,107 @@
         "gamble",
         "hold_win",
         "multiplier_wild",
+        "mystery",
+        "pick_bonus",
+        "random_wild"
+      ]
+    },
+    {
+      "id": "phoenix_rebirth",
+      "name": "凤凰涅槃",
+      "reels": 5,
+      "rows": 3,
+      "pay_mode": "lines",
+      "theme": {
+        "id": "phoenix",
+        "name": "凤凰涅槃",
+        "palette": {
+          "grid": "#2a0f0c",
+          "reel": "#3a1712",
+          "win": "#ffd45c",
+          "wild": "#ffe9a8",
+          "bonus": "#ff8c42"
+        },
+        "cabinet_color": "#4a1410",
+        "background": "#180806",
+        "accent": "#ff8c42",
+        "music": ""
+      },
+      "symbols": [
+        {
+          "id": "plume",
+          "name": "火羽",
+          "kind": "standard",
+          "color": "#ff9d5c",
+          "glyph": "🪶"
+        },
+        {
+          "id": "jade",
+          "name": "赤玉",
+          "kind": "standard",
+          "color": "#ff6b6b",
+          "glyph": "🔴"
+        },
+        {
+          "id": "mirror",
+          "name": "青铜镜",
+          "kind": "standard",
+          "color": "#c9a227",
+          "glyph": "🪞"
+        },
+        {
+          "id": "scroll",
+          "name": "卷轴",
+          "kind": "standard",
+          "color": "#e8d8b0",
+          "glyph": "📜"
+        },
+        {
+          "id": "censer",
+          "name": "香炉",
+          "kind": "standard",
+          "color": "#b08968",
+          "glyph": "🪔"
+        },
+        {
+          "id": "ash",
+          "name": "余烬",
+          "kind": "standard",
+          "color": "#9a8f80",
+          "glyph": "🌫️"
+        },
+        {
+          "id": "wild",
+          "name": "涅槃之火 Wild",
+          "kind": "wild",
+          "color": "#ffe9a8",
+          "glyph": "🔥"
+        },
+        {
+          "id": "scatter",
+          "name": "神木 Scatter",
+          "kind": "scatter",
+          "color": "#8ad7ff",
+          "glyph": "🌳"
+        },
+        {
+          "id": "egg",
+          "name": "凤凰蛋（神秘符号）",
+          "kind": "bonus",
+          "color": "#ffd45c",
+          "glyph": "🥚"
+        }
+      ],
+      "features": [
+        "cascade",
+        "collect",
+        "colossal",
+        "expanding_wild",
+        "free_spins",
+        "gamble",
+        "hold_win",
+        "multiplier_wild",
+        "mystery",
         "pick_bonus",
         "random_wild"
       ]
@@ -668,6 +774,7 @@
         "gamble",
         "hold_win",
         "multiplier_wild",
+        "mystery",
         "pick_bonus",
         "random_wild"
       ]
@@ -774,6 +881,7 @@
         "gamble",
         "hold_win",
         "multiplier_wild",
+        "mystery",
         "pick_bonus",
         "random_wild"
       ]

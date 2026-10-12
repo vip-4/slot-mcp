@@ -160,6 +160,31 @@
       }
     },
     {
+      "game": "phoenix_rebirth",
+      "alt": "凤凰涅槃机台主题图：浴火凤凰与烈焰",
+      "provider": "pexels",
+      "page_url": "https://www.pexels.com/photo/close-up-of-the-flame-in-the-fireplace-24868693/",
+      "author": "Nuh Isa El Carillo",
+      "author_url": "https://www.pexels.com/@nuh-isa-el-carillo-151117050",
+      "license": "Pexels License（可免费商用，无需署名但建议署名）",
+      "files": {
+        "hero": {
+          "path": "phoenix_rebirth-hero.jpg",
+          "width": 960,
+          "height": 540,
+          "bytes": 91193,
+          "source": "https://images.pexels.com/photos/24868693/pexels-photo-24868693.jpeg?auto=compress&cs=tinysrgb&fit=crop&w=960&h=540"
+        },
+        "og": {
+          "path": "phoenix_rebirth-og.jpg",
+          "width": 1200,
+          "height": 630,
+          "bytes": 119924,
+          "source": "https://images.pexels.com/photos/24868693/pexels-photo-24868693.jpeg?auto=compress&cs=tinysrgb&fit=crop&w=1200&h=630"
+        }
+      }
+    },
+    {
       "game": "star_expedition",
       "alt": "星际远征机台主题图：星系与深空星云",
       "provider": "pexels",

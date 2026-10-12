@@ -22,7 +22,67 @@ __all__ = [
     "collect_coins",
     "resolve_pick_bonus",
     "place_colossal_symbol",
+    "reveal_mystery_symbols",
 ]
+
+
+def reveal_mystery_symbols(
+    grid: Grid,
+    ms: Any,
+    rng: SlotRNG,
+    phase: str = "base",
+) -> Optional[Dict[str, Any]]:
+    """神秘符号揭示：把屏上的占位符号替换为随机目标符号。
+
+    `reveal_all_same=True` 时全屏揭示为同一符号（只消耗 1 个随机数）；
+    否则按「轴优先、行次之」的扫描顺序逐格独立揭示。
+    """
+    if not ms or not ms.enabled:
+        return None
+    if phase not in (ms.phases or ["base", "free_spins"]):
+        return None
+
+    target = ms.symbol
+    positions: List[Position] = []
+    for reel_idx, column in enumerate(grid):
+        for row_idx, sym in enumerate(column):
+            if sym == target:
+                positions.append((reel_idx, row_idx))
+    if not positions:
+        return None
+
+    sym_ids = [s for s in ms.reveal_symbols if int(ms.reveal_symbols[s]) > 0]
+    total = sum(int(ms.reveal_symbols[s]) for s in sym_ids)
+    if total <= 0:
+        return None
+
+    def _draw() -> str:
+        t = rng.random() * total
+        acc = 0
+        picked = sym_ids[-1]
+        for s in sym_ids:
+            acc += int(ms.reveal_symbols[s])
+            if t < acc:
+                picked = s
+                break
+        return picked
+
+    if ms.reveal_all_same:
+        revealed = _draw()
+        for reel_idx, row_idx in positions:
+            grid[reel_idx][row_idx] = revealed
+    else:
+        revealed_list = [_draw() for _ in positions]
+        for (reel_idx, row_idx), sym in zip(positions, revealed_list):
+            grid[reel_idx][row_idx] = sym
+        revealed = ",".join(revealed_list)
+
+    return {
+        "type": "mystery_reveal",
+        "symbol": revealed,
+        "count": len(positions),
+        "positions": [[r, c] for r, c in positions],
+    }
 
 
 def place_colossal_symbol(

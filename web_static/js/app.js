@@ -338,6 +338,9 @@
         else if (e.type === 'colossal') {
           const cs = cfg.symbols[e.symbol] || { name: e.symbol };
           say(`巨符号降临：${e.size}×${e.size} 的${cs.name}落在第 ${e.reel + 1} 轴`);
+        } else if (e.type === 'mystery_reveal') {
+          const mr = cfg.symbols[e.symbol] || { name: e.symbol };
+          say(`凤凰蛋孵化：${e.count} 枚揭示为${mr.name}`);
         }
       });
       if (!reduceMotion) await sleep(step.phase === 'hold_win' ? 620 : i === 0 ? 420 : 340);

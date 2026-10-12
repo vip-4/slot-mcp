@@ -291,7 +291,7 @@ def main() -> int:
         )
         pix = PixabayClient("k").normalize({"id": 2, "pageURL": "u", "user": "B", "largeImageURL": "https://cdn/x.jpg"})
         check(pix["provider"] == "pixabay" and pix["raw"].endswith("x.jpg"), "Pixabay 结果归一化")
-        check(len(THEME_QUERIES) == 8 and all("alt" in v for v in THEME_QUERIES.values()), "6 款机台都有检索词与中文 alt")
+        check(len(THEME_QUERIES) == 9 and all("alt" in v for v in THEME_QUERIES.values()), "6 款机台都有检索词与中文 alt")
 
         print("== Neon（HTTP SQL） ==")
         neon = NeonClient("postgresql://u:p@ep-demo.eu.neon.tech/db", base_url=f"{base}/sql")

@@ -70,6 +70,11 @@ THEME_QUERIES: Dict[str, Dict[str, str]] = {
         "pixabay": "ruins jungle temple",
         "alt": "巨神遗迹机台主题图：丛林中的古代遗迹石像",
     },
+    "phoenix_rebirth": {
+        "pexels": "phoenix fire bird flames",
+        "pixabay": "phoenix fire flames",
+        "alt": "凤凰涅槃机台主题图：浴火凤凰与烈焰",
+    },
 }
 
 HERO_SIZE = (960, 540)

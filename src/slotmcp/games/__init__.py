@@ -1,4 +1,4 @@
-"""内置 6 款 SLOT 机台。
+"""内置 9 款 SLOT 机台。
 
 新增机台只需两步：
 1. 在本包下新建 `<game_id>.py`，实现 `build_config() -> GameConfig`（可导出 `CONFIG`）；
@@ -20,6 +20,7 @@ from . import (
     fortune_koi,
     lucky_fruits,
     pharaoh_tomb,
+    phoenix_rebirth,
     star_expedition,
     thunder_temple,
 )
@@ -36,6 +37,7 @@ __all__ = [
     "fortune_koi",
     "lucky_fruits",
     "pharaoh_tomb",
+    "phoenix_rebirth",
     "star_expedition",
     "thunder_temple",
 ]
@@ -49,6 +51,7 @@ _BUILDERS: Dict[str, Callable[[], GameConfig]] = {
     fortune_koi.GAME_ID: fortune_koi.build_config,
     thunder_temple.GAME_ID: thunder_temple.build_config,
     colossal_ruins.GAME_ID: colossal_ruins.build_config,
+    phoenix_rebirth.GAME_ID: phoenix_rebirth.build_config,
 }
 
 

@@ -2,6 +2,7 @@
 
 import json
 import sys
+import tempfile
 import threading
 import urllib.error
 import urllib.request
@@ -12,7 +13,14 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 
 from slotmcp.services.agentmail import AgentMailClient  # noqa: E402
+from slotmcp.services.cloudflare import (  # noqa: E402
+    CloudflareClient,
+    build_manifest,
+    build_multipart,
+    collect_files,
+)
 from slotmcp.services.cronjob import CronJobClient, every_n_minutes  # noqa: E402
+from slotmcp.services.github import GitHubClient  # noqa: E402
 from slotmcp.services.media import (  # noqa: E402
     THEME_QUERIES,
     PixabayClient,
@@ -26,7 +34,11 @@ from slotmcp.services.playcanvas import PlayCanvasClient, build_scene_descriptor
 FAILS = 0
 TESTS = 0
 
-STATE = {"jobs": [], "sent": [], "next_id": 1001, "sql": [], "neon_headers": {}, "supa_body": None, "last_get": ""}
+STATE = {
+    "jobs": [], "sent": [], "next_id": 1001, "sql": [], "neon_headers": {},
+    "supa_body": None, "last_get": "", "multipart": b"", "deploy_files": 0,
+    "pages_body": None, "cf_created": None,
+}
 
 
 def check(cond: bool, msg: str) -> None:
@@ -51,7 +63,14 @@ class Handler(BaseHTTPRequestHandler):
 
     def _read(self):
         length = int(self.headers.get("Content-Length") or 0)
-        return json.loads(self.rfile.read(length) or b"{}") if length else {}
+        raw = self.rfile.read(length) if length else b""
+        if not raw:
+            return {}
+        ctype = self.headers.get("Content-Type", "")
+        if ctype.startswith("multipart/form-data"):  # Cloudflare 直传
+            STATE["multipart"] = raw
+            return {"__raw__": True}
+        return json.loads(raw)
 
     def do_GET(self):
         p = self.path
@@ -61,6 +80,12 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(200, {"count": 1, "inboxes": [{"inbox_id": "a@agentmail.to"}]})
         if p == "/jobs":
             return self._json(200, {"jobs": STATE["jobs"]})
+        if p == "/user":  # GitHub
+            return self._json(200, {"login": "vip-4", "id": 1})
+        if p.endswith("/pages") and "/repos/" in p:  # GitHub Pages 状态
+            return self._json(200, {"status": "built", "html_url": "https://vip-4.github.io/slot-games/"})
+        if "/repos/" in p:
+            return self._json(200, {"full_name": p.split("/repos/")[-1], "html_url": "https://github.com/x"})
         if p == "/inboxes-meta":
             return self._json(200, {"ok": True})
         if p.startswith("/rest/v1/"):  # Supabase（PostgREST）
@@ -106,6 +131,19 @@ class Handler(BaseHTTPRequestHandler):
         if p.startswith("/rest/v1/"):  # Supabase 写入
             STATE["supa_body"] = body
             return self._json(201, [dict(body, id=1)])
+        if p == "/user/repos":  # GitHub 建仓
+            return self._json(201, {"full_name": f"vip-4/{body.get('name')}", "html_url": "https://github.com/vip-4/x"})
+        if "/repos/" in p and p.endswith("/pages"):  # GitHub 开启 Pages
+            STATE["pages_body"] = body
+            return self._json(201, {"status": "queued"})
+        # Cloudflare Pages（base_url 指向桩服务，路径形如 /accounts/<id>/pages/...）
+        if p.endswith("/pages/projects"):
+            STATE["cf_created"] = body
+            return self._json(200, {"success": True, "result": {"name": body.get("name"), "subdomain": f"{body.get('name')}.pages.dev"}})
+        if "/pages/projects/" in p and p.endswith("/deployments"):
+            raw = STATE.get("multipart", b"")
+            STATE["deploy_files"] = raw.count(b'name="')
+            return self._json(200, {"success": True, "result": {"id": "dep-1", "url": "https://slot-games.pages.dev"}})
         self._json(404, {"error": "not found"})
 
     def do_PUT(self):
@@ -255,6 +293,42 @@ def main() -> int:
         down = SupabaseClient("http://127.0.0.1:9", "k")  # 关闭端口模拟「项目已暂停」
         ok, detail = down.ping()
         check(not ok and "不可达" in detail, f"项目暂停时降级为不可达提示：{detail[:30]}")
+
+        print("== Cloudflare Pages 直传 ==")
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp) / "site"
+            (root / "games").mkdir(parents=True)
+            (root / "index.html").write_text("<h1>hi</h1>", encoding="utf-8")
+            (root / "games" / "a.html").write_text("x", encoding="utf-8")
+            (root / "games" / "b.html").write_text("y", encoding="utf-8")
+            files = collect_files(root)
+            check(set(files) == {"index.html", "games/a.html", "games/b.html"}, f"收集目录文件：{sorted(files)}")
+            manifest = build_manifest(files)
+            check(all(k.startswith("/") for k in manifest), "manifest 以 / 开头的路径为键")
+            ctype, body = build_multipart(files, manifest)
+            check(ctype.startswith("multipart/form-data; boundary="), "multipart 头带 boundary")
+            check(b'name="manifest"' in body and b'filename="index.html"' in body, "包含 manifest 与文件部件")
+
+        cf = CloudflareClient("cfat_x", "acct1", base_url=base)
+        project, state = cf.ensure_project("slot-games")
+        check(state == "created" and project["name"] == "slot-games", f"ensure_project 创建：{state}")
+        ok, status, payload = cf.deploy("slot-games", {"index.html": b"<h1>hi</h1>"})
+        check(ok and payload["result"]["id"] == "dep-1", f"直传部署返回部署 ID：{payload.get('result')}")
+        check(STATE.get("deploy_files", 0) >= 2, f"multipart 含 manifest + 文件部件（{STATE.get('deploy_files')}）")
+        check(
+            CloudflareClient.project_url({"name": "slot-games", "subdomain": "slot-games.pages.dev"})
+            == "https://slot-games.pages.dev",
+            "项目地址取自 subdomain",
+        )
+
+        print("== GitHub Pages ==")
+        gh = GitHubClient("ghp_x", base_url=base)
+        check(gh.login() == "vip-4", f"读取账号：{gh.login()}")
+        repo, state = gh.ensure_repo("slot-games")
+        check(state == "exists" and repo["full_name"].endswith("/slot-games"), f"ensure_repo：{state}")
+        ok, status, payload = gh.enable_pages("vip-4/slot-games", "main", "/")
+        check(ok and STATE["pages_body"]["source"]["branch"] == "main", f"开启 Pages 请求体：{STATE['pages_body']}")
+        check(GitHubClient.pages_url("Vip-4", "slot-games") == "https://vip-4.github.io/slot-games/", "Pages 地址小写化")
 
         print("== Metaso GEO 监测 ==")
         ms = MetasoClient("k", base_url=base)

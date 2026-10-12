@@ -229,6 +229,16 @@ python -m slotmcp.tools.deploy_ops --all --dry-run # 只打印计划动作
 | Metaso | GEO 收录与 AI 摘要监测 | `--geo`：`POST /api/v1/search`，判断 AI 搜索是否命中本站、摘要内容 |
 | Neon（主 + 镜像） | 部署审计 / RTP 回归 / 统计快照 | `python -m slotmcp.tools.db_sync --init/--rtp/--snapshot`；HTTP SQL 无需本地驱动；聚合结果静态注入页面，**站点运行时不查库** |
 | Supabase | 排行榜（可选增强） | 项目当前 `INACTIVE`，客户端已实现 `ping/select/insert` 并在不可达时降级；恢复后前端可用 publishable key 直连 |
+| Cloudflare Pages | 静态站直传发布 | `python -m slotmcp.tools.deploy_pages --cloudflare`；multipart 直传，无需 wrangler。**当前账号项目配额已满（10/10）**，需先用 `--project <已有项目>` 或删除闲置项目 |
+| GitHub Pages | 生产站点（已上线） | `python -m slotmcp.tools.deploy_pages --github`；建仓 → 推送 → 开启 Pages，地址 `https://vip-4.github.io/slot-games/` |
+
+### 9.1 一键发布
+
+```bash
+python tools/build_static.py --site-url https://vip-4.github.io/slot-games/   # canonical / sitemap 对齐
+python -m slotmcp.tools.deploy_pages --all --dir static                       # Cloudflare + GitHub
+python -m slotmcp.tools.deploy_ops --all --site-url https://vip-4.github.io/slot-games/
+```
 
 凭证只从环境变量或 `deploy/services.local.json`（已 gitignore）读取，绝不入库。
 详见 `docs/DEPLOY_OPS.md`。

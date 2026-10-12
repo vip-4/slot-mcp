@@ -10,6 +10,27 @@ from typing import Any, Dict, Optional, Tuple
 
 DEFAULT_TIMEOUT = 15.0
 
+_CTX: Any = None
+
+
+def ssl_context() -> Any:
+    """HTTPS 上下文：优先使用 `certifi` 的根证书（若环境已安装），否则用系统默认。
+
+    某些精简版 Python 不带根证书，会导致 `certificate verify failed`；
+    certifi 是**可选**依赖，缺失时退回系统默认行为，不影响零依赖部署。
+    """
+    global _CTX
+    if _CTX is None:
+        try:
+            import ssl
+
+            import certifi
+
+            _CTX = ssl.create_default_context(cafile=certifi.where())
+        except Exception:  # noqa: BLE001
+            _CTX = False  # False 表示「不传 context，用 urllib 默认行为」
+    return _CTX or None
+
 
 def request_json(
     url: str,
@@ -39,7 +60,7 @@ def request_json(
     for attempt in range(retries + 1):
         req = urllib.request.Request(url, data=data, headers=hdrs, method=method)
         try:
-            with urllib.request.urlopen(req, timeout=timeout) as resp:
+            with urllib.request.urlopen(req, timeout=timeout, context=ssl_context()) as resp:
                 raw = resp.read().decode("utf-8", "ignore")
                 try:
                     payload = json.loads(raw) if raw.strip() else {}
@@ -58,6 +79,30 @@ def request_json(
         if attempt < retries:
             time.sleep(backoff * (2**attempt))
     return False, last_status, last_error
+
+
+def request_raw(
+    url: str,
+    *,
+    method: str = "POST",
+    headers: Dict[str, str],
+    data: bytes,
+    timeout: float = 60.0,
+) -> Tuple[bool, int, Any]:
+    """发送原始字节体（multipart 直传等场景），返回与 `request_json` 相同的三元组。"""
+    req = urllib.request.Request(url, data=data, headers=headers, method=method)
+    try:
+        with urllib.request.urlopen(req, timeout=timeout, context=ssl_context()) as resp:
+            raw = resp.read().decode("utf-8", "ignore")
+            try:
+                return True, resp.status, json.loads(raw) if raw.strip() else {}
+            except ValueError:
+                return True, resp.status, raw
+    except urllib.error.HTTPError as exc:
+        detail = exc.read().decode("utf-8", "ignore").strip()
+        return False, exc.code, f"HTTP {exc.code}: {detail[:300] or exc.reason}"
+    except (urllib.error.URLError, TimeoutError, OSError) as exc:
+        return False, 0, f"网络错误: {exc}"
 
 
 def head_ok(url: str, timeout: float = 10.0) -> Tuple[bool, int, float]:

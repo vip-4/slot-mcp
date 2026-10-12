@@ -33,5 +33,17 @@
     "key": "sb_publishable_...",
     "ref": "<ref>",
     "access_token": "sbp_...（Management API，用于查询项目状态）"
+  },
+
+  "cloudflare": {
+    "account_id": "8eb2b9535949b021a8898e81575fba9a",
+    "api_token": "cfat_...（或设置环境变量 CLOUDFLARE_API_TOKEN）",
+    "project": "slot-games"
+  },
+
+  "github": {
+    "token": "ghp_...（或设置环境变量 GITHUB_TOKEN）",
+    "repo": "slot-games",
+    "branch": "main"
   }
 }

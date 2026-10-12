@@ -174,12 +174,30 @@ Supabase 项目当前状态为 `INACTIVE`（REST 域名无法解析），客户�
 
 仓库根目录即站点内容，所以 Pages 不需要指定子目录。
 
+## 9. 发布通道（Cloudflare Pages / GitHub Pages）
+
+```bash
+python -m slotmcp.tools.deploy_pages --cloudflare   # 直传 static/（multipart，无需 wrangler）
+python -m slotmcp.tools.deploy_pages --github       # 建仓 → 推送 → 开启 Pages
+python -m slotmcp.tools.deploy_pages --all --dry-run
+```
+
+| 通道 | 状态 | 说明 |
+| --- | --- | --- |
+| GitHub Pages | **已上线** | 仓库 `vip-4/slot-games`，地址 `https://vip-4.github.io/slot-games/`；首次开启后重复执行会命中 409 并视为成功 |
+| Cloudflare Pages | 受限 | 账号 `8eb2b953…` 项目数已达上限（10/10，`code 8000027`）。可用 `--project <已有项目>` 复写指定项目，或删除闲置项目后再建 `slot-games` |
+| Cloudflare R2 | 不可用 | 本机到 `*.r2.cloudflarestorage.com` 的 TLS 握手失败（Python 与 WinHTTP 均失败），且该 token 无 R2 权限（`/r2/buckets` 403） |
+
+推送用 `git`，并且**先 `fetch` + `reset --soft` 对齐远端历史**——否则每次用临时仓库推送都会因无关历史被拒
+（`non-fast-forward`）。内容推送与 Pages 开启解耦：推送失败不会误判为 Pages 未开启。
+
 ## 10. 自测
 
-`tests/test_services.py` 用**本地桩服务**（不发真实请求）验证 38 项：请求体形态、
+`tests/test_services.py` 用**本地桩服务**（不发真实请求）验证 50 项：请求体形态、
 `schedule` 换算与非法间隔拒绝、upsert 幂等（创建→更新→仍只有一条）、
 403 降级、图片结果归一化与裁剪 URL、Metaso 命中判定与错误降级、
-Neon HTTP SQL（含字面量转义与结构化错误）、Supabase REST 读写与暂停降级、场景导出、报告渲染。
+Neon HTTP SQL（含字面量转义与结构化错误）、Supabase REST 读写与暂停降级、
+Cloudflare 目录收集 / manifest / multipart 构造 / 项目与部署请求、GitHub 建仓与 Pages 请求体、场景导出、报告渲染。
 
 ```bash
 python tests/run_tests.py services

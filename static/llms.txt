@@ -12,11 +12,11 @@
 - 开源协议：MIT；积分保存在浏览器 localStorage，不上传服务器
 
 ## 机台
-- [糖果狂欢](https://vip882.gitee.io/slot-games/games/candy_carnival.html)：5×3，20 条赔付线，波动中，目标 RTP 96%（实测 97.04%），特性：扩展 Wild + 锁轴重转
-- [龙宫探宝](https://vip882.gitee.io/slot-games/games/dragon_palace.html)：5×4，50 条赔付线，波动高，目标 RTP 96%（实测 97.20%），特性：免费旋转
-- [幸运水果机](https://vip882.gitee.io/slot-games/games/lucky_fruits.html)：3×3，5 条赔付线，波动低，目标 RTP 96%（实测 97.08%），特性：红黑翻倍博彩
-- [法老之墓](https://vip882.gitee.io/slot-games/games/pharaoh_tomb.html)：5×3，243 Ways，波动中高，目标 RTP 96%（实测 95.40%），特性：Hold & Win 宝箱重转
-- [星际远征](https://vip882.gitee.io/slot-games/games/star_expedition.html)：6×4，4096 Ways，波动高，目标 RTP 96%（实测 95.78%），特性：免费旋转、级联（雪崩）连击
+- [糖果狂欢](https://vip-4.github.io/slot-games/games/candy_carnival.html)：5×3，20 条赔付线，波动中，目标 RTP 96%（实测 97.04%），特性：扩展 Wild + 锁轴重转
+- [龙宫探宝](https://vip-4.github.io/slot-games/games/dragon_palace.html)：5×4，50 条赔付线，波动高，目标 RTP 96%（实测 97.20%），特性：免费旋转
+- [幸运水果机](https://vip-4.github.io/slot-games/games/lucky_fruits.html)：3×3，5 条赔付线，波动低，目标 RTP 96%（实测 97.08%），特性：红黑翻倍博彩
+- [法老之墓](https://vip-4.github.io/slot-games/games/pharaoh_tomb.html)：5×3，243 Ways，波动中高，目标 RTP 96%（实测 95.40%），特性：Hold & Win 宝箱重转
+- [星际远征](https://vip-4.github.io/slot-games/games/star_expedition.html)：6×4，4096 Ways，波动高，目标 RTP 96%（实测 95.78%），特性：免费旋转、级联（雪崩）连击
 
 ## 验证数据（构建期由数据库聚合后静态注入）
 - 累计仿真 100000 局，最近更新 2026-10-12T19:10:30+00:00

@@ -196,6 +196,57 @@
     };
   }
 
+  // 同步轴：与 Python 端 sync_reels 同构（先抽同步轴数，再抽起始轴）
+  function syncReels(grid, sr, rng, phase) {
+    if (!sr || !sr.enabled) return null;
+    var phases = sr.phases || ['base', 'free_spins'];
+    if (phases.indexOf(phase) < 0) return null;
+
+    var widths = Object.keys(sr.widths || {})
+      .map(Number)
+      .filter(function (w) {
+        return Number(sr.widths[w]) > 0;
+      })
+      .sort(function (a, b) {
+        return a - b;
+      });
+    if (!widths.length) return null;
+    var total = 0;
+    widths.forEach(function (w) {
+      total += Number(sr.widths[w]) || 0;
+    });
+    if (total <= 0) return null;
+
+    // 1) 抽同步轴数
+    var target = rng.random() * total;
+    var acc = 0;
+    var width = widths[widths.length - 1];
+    for (var i = 0; i < widths.length; i++) {
+      acc += Number(sr.widths[widths[i]]) || 0;
+      if (target < acc) {
+        width = widths[i];
+        break;
+      }
+    }
+    width = Math.min(width, grid.length);
+    if (width < 2) return null;
+
+    // 2) 抽起始轴
+    var span = grid.length - width + 1;
+    var start = span > 0 ? rng.intBelow(span) : 0;
+    if (sr.copy_from === 'first') {
+      var source = grid[start].slice();
+      for (var k = 1; k < width; k++) grid[start + k] = source.slice();
+    }
+    return { type: 'sync_reels', reels: rangeToList(start, start + width), width: width, start: start };
+  }
+
+  function rangeToList(from, to) {
+    var out = [];
+    for (var i = from; i < to; i++) out.push(i);
+    return out;
+  }
+
   // 行走 Wild（跨局状态）：与 Python 端 walk_wilds 同构，不消耗随机数
   function walkWilds(grid, ww, walkers, phase) {
     if (!ww || !ww.enabled) return { walkers: [], event: null };
@@ -791,6 +842,13 @@
     var rolled = this.roll(st, strips);
     var grid = rolled.grid;
     var stops = rolled.stops;
+
+    // 同步轴：紧跟采样之后，保证后面所有算子都在「已同步」的网格上工作
+    var sr = cfg.features.sync_reels;
+    if (sr && sr.enabled) {
+      var synced = syncReels(grid, sr, this.rng, st.phase);
+      if (synced) stepEvents.push(synced);
+    }
 
     // 巨符号：先于其它网格改写算子投放，保证后续判定看到的是最终网格
     var cs = cfg.features.colossal;

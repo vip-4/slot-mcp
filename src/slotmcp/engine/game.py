@@ -25,6 +25,7 @@ from .features import (
     place_random_wilds,
     resolve_pick_bonus,
     reveal_mystery_symbols,
+    sync_reels,
     walk_wilds,
 )
 from .reels import Grid, ReelStripSet
@@ -347,6 +348,13 @@ class SlotMachine:
             strip_set = self._current_strip_set(st)
 
         grid, stops = self._roll(st, strip_set)
+
+        # 同步轴：紧跟采样之后，保证后面所有算子都在「已同步」的网格上工作
+        sr = cfg.features.sync_reels
+        if sr and sr.enabled:
+            synced = sync_reels(grid, sr, self.rng, st.phase)
+            if synced:
+                step_events.append(synced)
 
         # 巨符号：在其它网格改写算子之前投放，保证后续 Wild/触发判定看到的是最终网格
         cs = cfg.features.colossal

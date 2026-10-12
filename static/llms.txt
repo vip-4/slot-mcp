@@ -1,13 +1,13 @@
 # Blender SLOT 游戏合集
 
-> 10 款免费在线老虎机（幸运水果、糖果狂欢、龙宫探宝、法老之墓、星际远征、锦鲤纳福、雷霆神殿、巨神遗迹、凤凰涅槃、冰原狼踪）共用一套 CONFIG 引擎：固定线与 243/4096 Ways 两种赔付体系，含免费旋转、Hold & Win、级联连击、扩展 Wild、随机 Wild 投放、Cash Collect 金币收集、倍率 Wild、Pick'em 选宝、巨符号、神秘符号揭示、行走 Wild 与红黑翻倍。纯静态网页，免下载免注册，移动端可玩。
+> 11 款免费在线老虎机（幸运水果、糖果狂欢、龙宫探宝、法老之墓、星际远征、锦鲤纳福、雷霆神殿、巨神遗迹、凤凰涅槃、冰原狼踪、霓虹双子）共用一套 CONFIG 引擎：固定线与 243/4096 Ways 两种赔付体系，含免费旋转、Hold & Win、级联连击、扩展 Wild、随机 Wild 投放、Cash Collect 金币收集、倍率 Wild、Pick'em 选宝、巨符号、神秘符号揭示、行走 Wild、同步轴与红黑翻倍。纯静态网页，免下载免注册，移动端可玩。
 
 本文件为生成式引擎（AI 摘要 / 引用）准备的事实清单，内容与页面正文一致。
 
 ## 关键事实
-- 机台数量：10 款（糖果狂欢 / 巨神遗迹 / 龙宫探宝 / 锦鲤纳福 / 冰原狼踪 / 幸运水果机 / 法老之墓 / 凤凰涅槃 / 星际远征 / 雷霆神殿）
+- 机台数量：11 款（糖果狂欢 / 巨神遗迹 / 龙宫探宝 / 锦鲤纳福 / 冰原狼踪 / 幸运水果机 / 霓虹双子 / 法老之墓 / 凤凰涅槃 / 星际远征 / 雷霆神殿）
 - 部署形态：纯静态网页，无后端接口、无需注册与下载
-- 引擎：10 款机台共用同一套 CONFIG 引擎；新增机台只需新增一份配置
+- 引擎：11 款机台共用同一套 CONFIG 引擎；新增机台只需新增一份配置
 - RTP：目标 96%，20 万局实测区间 95.40% – 97.20%
 - 开源协议：MIT；积分保存在浏览器 localStorage，不上传服务器
 
@@ -18,6 +18,7 @@
 - [锦鲤纳福](https://vip-4.github.io/slot-games/games/fortune_koi.html)：5×3，20 条赔付线，波动中高，目标 RTP 96%（实测 96.76%），特性：免费旋转
 - [冰原狼踪](https://vip-4.github.io/slot-games/games/frost_wolf.html)：5×4，50 条赔付线，波动高，目标 RTP 96%（实测 96.44%），特性：免费旋转
 - [幸运水果机](https://vip-4.github.io/slot-games/games/lucky_fruits.html)：3×3，5 条赔付线，波动低，目标 RTP 96%（实测 97.08%），特性：红黑翻倍博彩
+- [霓虹双子](https://vip-4.github.io/slot-games/games/neon_twins.html)：5×3，20 条赔付线，波动中高，目标 RTP 96%（实测 96.32%），特性：免费旋转
 - [法老之墓](https://vip-4.github.io/slot-games/games/pharaoh_tomb.html)：5×3，243 Ways，波动中高，目标 RTP 96%（实测 95.40%），特性：Hold & Win 宝箱重转
 - [凤凰涅槃](https://vip-4.github.io/slot-games/games/phoenix_rebirth.html)：5×3，20 条赔付线，波动中高，目标 RTP 96%（实测 96.92%），特性：免费旋转
 - [星际远征](https://vip-4.github.io/slot-games/games/star_expedition.html)：6×4，4096 Ways，波动高，目标 RTP 96%（实测 95.78%），特性：免费旋转、级联（雪崩）连击

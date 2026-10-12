@@ -663,6 +663,42 @@ class WalkingWildConfig:
 
 
 @dataclass
+class SyncReelsConfig:
+    """同步轴（Twin / Sync Reels）：每局随机挑选若干**相邻轴**显示完全相同的符号。
+
+    * `widths`：同步轴数 -> 权重（2 表示两轴同步；权重为 0 表示不出现该宽度）
+    * `phases`：生效阶段（base / free_spins）
+    * `copy_from`：`first` = 以最左轴为准向右复制（当前唯一实现）
+
+    RNG 消耗顺序：先抽同步轴数（1 个随机数），再抽起始轴（1 个随机数）。
+    """
+
+    enabled: bool = False
+    widths: Dict[int, int] = field(default_factory=dict)
+    phases: List[str] = field(default_factory=lambda: ["base", "free_spins"])
+    copy_from: str = "first"
+
+    COPY_MODES = ("first",)
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "enabled": self.enabled,
+            "widths": {int(k): int(v) for k, v in self.widths.items()},
+            "phases": list(self.phases),
+            "copy_from": self.copy_from,
+        }
+
+    @staticmethod
+    def from_dict(d: Dict[str, Any]) -> "SyncReelsConfig":
+        return SyncReelsConfig(
+            enabled=bool(d.get("enabled", False)),
+            widths={int(k): int(v) for k, v in (d.get("widths") or {}).items()},
+            phases=list(d.get("phases") or ["base", "free_spins"]),
+            copy_from=d.get("copy_from", "first"),
+        )
+
+
+@dataclass
 class GambleConfig:
     enabled: bool = False
     max_steps: int = 5
@@ -703,6 +739,7 @@ class Features:
     colossal: Optional[ColossalSymbolConfig] = None
     mystery: Optional[MysterySymbolConfig] = None
     walking_wild: Optional[WalkingWildConfig] = None
+    sync_reels: Optional[SyncReelsConfig] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -718,6 +755,7 @@ class Features:
             "colossal": self.colossal.to_dict() if self.colossal else None,
             "mystery": self.mystery.to_dict() if self.mystery else None,
             "walking_wild": self.walking_wild.to_dict() if self.walking_wild else None,
+            "sync_reels": self.sync_reels.to_dict() if self.sync_reels else None,
         }
 
     @staticmethod
@@ -739,6 +777,7 @@ class Features:
             colossal=ColossalSymbolConfig.from_dict(d["colossal"]) if d.get("colossal") else None,
             mystery=MysterySymbolConfig.from_dict(d["mystery"]) if d.get("mystery") else None,
             walking_wild=WalkingWildConfig.from_dict(d["walking_wild"]) if d.get("walking_wild") else None,
+            sync_reels=SyncReelsConfig.from_dict(d["sync_reels"]) if d.get("sync_reels") else None,
         )
 
 
@@ -1164,6 +1203,28 @@ class GameConfig:
             # 基础 game 每局都会重置状态，此时「行走」没有意义（等价于普通 Wild）
             if "base" in (ww.phases or []) and "free_spins" not in (ww.phases or []):
                 errors.append("walking_wild 只在 base 生效没有意义（状态每局重置），请包含 free_spins")
+
+        sr = self.features.sync_reels
+        if sr and sr.enabled:
+            if not sr.widths:
+                errors.append("sync_reels.widths 不能为空")
+            widths = [int(w) for w in sr.widths if int(sr.widths[w]) > 0]
+            if not widths:
+                errors.append("sync_reels.widths 至少要有一个正权重")
+            else:
+                if min(widths) < 2:
+                    errors.append("sync_reels 同步轴数至少为 2（1 轴等于不同步）")
+                if max(widths) > self.reels:
+                    errors.append(f"sync_reels 同步轴数不能超过总轴数 {self.reels}")
+                if min(widths) > self.reels:
+                    errors.append("sync_reels 最小同步轴数超过总轴数")
+            if any(int(v) < 0 for v in sr.widths.values()):
+                errors.append("sync_reels 权重不能为负")
+            if sr.copy_from not in SyncReelsConfig.COPY_MODES:
+                errors.append(f"sync_reels.copy_from 非法: {sr.copy_from}")
+            for phase in sr.phases or []:
+                if phase not in ("base", "free_spins", "hold_win"):
+                    errors.append(f"sync_reels.phases 非法: {phase}")
 
         ew = self.features.expanding_wild
         if ew:

@@ -80,6 +80,11 @@ THEME_QUERIES: Dict[str, Dict[str, str]] = {
         "pixabay": "wolf snow winter",
         "alt": "冰原狼踪机台主题图：雪原上的狼与极光",
     },
+    "neon_twins": {
+        "pexels": "neon lights city night cyberpunk",
+        "pixabay": "neon city night",
+        "alt": "霓虹双子机台主题图：赛博霓虹街景",
+    },
 }
 
 HERO_SIZE = (960, 540)

@@ -160,6 +160,31 @@
       }
     },
     {
+      "game": "neon_twins",
+      "alt": "霓虹双子机台主题图：赛博霓虹街景",
+      "provider": "pexels",
+      "page_url": "https://www.pexels.com/photo/lights-in-darkness-in-alley-in-town-17195067/",
+      "author": "kaio ryan",
+      "author_url": "https://www.pexels.com/@kaio-ryan-479647430",
+      "license": "Pexels License（可免费商用，无需署名但建议署名）",
+      "files": {
+        "hero": {
+          "path": "neon_twins-hero.jpg",
+          "width": 960,
+          "height": 540,
+          "bytes": 60761,
+          "source": "https://images.pexels.com/photos/17195067/pexels-photo-17195067.jpeg?auto=compress&cs=tinysrgb&fit=crop&w=960&h=540"
+        },
+        "og": {
+          "path": "neon_twins-og.jpg",
+          "width": 1200,
+          "height": 630,
+          "bytes": 83379,
+          "source": "https://images.pexels.com/photos/17195067/pexels-photo-17195067.jpeg?auto=compress&cs=tinysrgb&fit=crop&w=1200&h=630"
+        }
+      }
+    },
+    {
       "game": "pharaoh_tomb",
       "alt": "法老之墓机台主题图：古埃及金字塔与法老雕像",
       "provider": "pexels",

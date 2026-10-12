@@ -24,7 +24,60 @@ __all__ = [
     "place_colossal_symbol",
     "reveal_mystery_symbols",
     "walk_wilds",
+    "sync_reels",
 ]
+
+
+def sync_reels(
+    grid: Grid,
+    sr: Any,
+    rng: SlotRNG,
+    phase: str = "base",
+) -> Optional[Dict[str, Any]]:
+    """同步轴：随机挑选若干相邻轴，让它们显示完全相同的符号。
+
+    RNG 消耗：先抽同步轴数，再抽起始轴（各 1 个随机数）——顺序必须与 JS 端一致。
+    """
+    if not sr or not sr.enabled:
+        return None
+    if phase not in (sr.phases or ["base", "free_spins"]):
+        return None
+
+    widths = [int(w) for w in sr.widths if int(sr.widths[w]) > 0]
+    if not widths:
+        return None
+    widths.sort()
+    total = sum(int(sr.widths[w]) for w in widths)
+    if total <= 0:
+        return None
+
+    # 1) 抽同步轴数
+    target = rng.random() * total
+    acc = 0
+    width = widths[-1]
+    for w in widths:
+        acc += int(sr.widths[w])
+        if target < acc:
+            width = w
+            break
+
+    width = min(width, len(grid))
+    if width < 2:
+        return None
+
+    # 2) 抽起始轴
+    start = rng.int_below(len(grid) - width + 1) if len(grid) - width + 1 > 0 else 0
+    if sr.copy_from == "first":
+        source = list(grid[start])
+        for offset in range(1, width):
+            grid[start + offset] = list(source)
+
+    return {
+        "type": "sync_reels",
+        "reels": list(range(start, start + width)),
+        "width": width,
+        "start": start,
+    }
 
 
 def walk_wilds(

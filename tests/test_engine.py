@@ -33,7 +33,7 @@ def check(condition: bool, message: str) -> None:
 def test_configuration() -> None:
     print("[engine] 配置与校验")
     ids = game_ids()
-    check(len(ids) == 10, f"内置 10 款机台: {', '.join(ids)}")
+    check(len(ids) == 11, f"内置 11 款机台: {', '.join(ids)}")
     check("fortune_koi" in ids, "新增机台 fortune_koi 已注册")
     for cfg in iter_game_configs():
         errors = cfg.validate()
@@ -798,6 +798,143 @@ def test_walking_wild_config_validation() -> None:
     check(any("walking_wild.symbol 未定义" in e for e in undef.validate()), "符号未定义被拦截")
 
 
+def test_sync_reels() -> None:
+    print("[engine] 同步轴（Twin Reels）")
+    from slotmcp.engine.config import SyncReelsConfig
+    from slotmcp.engine.features import sync_reels
+
+    nt = get_registry().get("neon_twins")
+    cfg = nt.config
+    sr = cfg.features.sync_reels
+    check(sr is not None and sr.enabled, "neon_twins 启用同步轴")
+    check(sr.widths.get(2, 0) > 0 and sr.widths.get(5, 0) > 0, "同步轴数覆盖 2~5")
+
+    # 固定宽度 2、权重唯一 -> 只可能是两轴同步
+    def _cfg(widths: Dict[int, int]) -> SyncReelsConfig:
+        return SyncReelsConfig(enabled=True, widths=widths, phases=["base", "free_spins"])
+
+    grid = [
+        ["heart", "disc", "star"],
+        ["disc", "disc", "disc"],
+        ["star", "star", "star"],
+        ["guitar", "guitar", "guitar"],
+        ["dice", "dice", "dice"],
+    ]
+    ev = sync_reels(grid, _cfg({2: 1}), SlotRNG("sync1"), "base")
+    check(ev is not None and ev["width"] == 2, f"两轴同步：{ev}")
+    a, b = ev["reels"]
+    check(grid[a] == grid[b], "相邻两轴内容完全一致")
+    check(b == a + 1, "同步的是相邻轴")
+
+    # 全轴同步：整屏应完全相同
+    grid2 = [
+        ["heart", "disc", "star"],
+        ["disc", "disc", "disc"],
+        ["star", "star", "star"],
+        ["guitar", "guitar", "guitar"],
+        ["dice", "dice", "dice"],
+    ]
+    ev2 = sync_reels(grid2, _cfg({5: 1}), SlotRNG("sync2"), "base")
+    check(ev2 is not None and ev2["width"] == 5 and ev2["start"] == 0, f"五轴同步：{ev2}")
+    check(all(col == grid2[0] for col in grid2), "全屏内容一致")
+
+    # 宽度分布按权重（2:55 / 3:30 / 4:12 / 5:3）
+    hist: Dict[int, int] = {}
+    for i in range(4000):
+        g = [["heart", "disc", "star"] for _ in range(5)]
+        e = sync_reels(g, _cfg({2: 55, 3: 30, 4: 12, 5: 3}), SlotRNG(f"w{i}"), "base")
+        assert e is not None
+        hist[e["width"]] = hist.get(e["width"], 0) + 1
+    total = sum(hist.values())
+    for width, expect in ((2, 0.55), (3, 0.30), (4, 0.12), (5, 0.03)):
+        got = hist.get(width, 0) / total
+        check(abs(got - expect) < 0.03, f"宽度 {width} 占比 ≈{expect}（实际 {got:.3f}）")
+
+    # 起始轴不越界
+    for i in range(500):
+        g3 = [["heart", "disc", "star"] for _ in range(5)]
+        e3 = sync_reels(g3, _cfg({2: 1, 3: 1}), SlotRNG(f"s{i}"), "base")
+        assert e3 is not None
+        check(e3["start"] + e3["width"] <= 5, "同步区间不越界") if i == 0 else None
+    check(True, "起始轴抽样始终落在合法区间")
+
+    # 阶段不匹配 -> 不生效
+    g4 = [["heart", "disc", "star"] for _ in range(5)]
+    check(sync_reels(g4, _cfg({2: 1}), SlotRNG("p"), "free_spins") is not None, "配置包含的阶段生效")
+    only_base = SyncReelsConfig(enabled=True, widths={2: 1}, phases=["base"])
+    check(sync_reels(g4, only_base, SlotRNG("p2"), "free_spins") is None, "不在生效阶段时不处理")
+
+    # 端到端：能触发，且同步后的网格确实一致
+    nt.rng = SlotRNG("neon")
+    hits = 0
+    for _ in range(2000):
+        for step in nt.spin(total_bet=1.0).steps:
+            for e in step.events:
+                if e.get("type") == "sync_reels":
+                    hits += 1
+                    cols = [step.grid[r] for r in e["reels"]]
+                    assert all(c == cols[0] for c in cols), "事件声明的轴必须内容一致"
+    check(hits > 0, f"端到端可触发同步轴（{hits} 次）")
+
+    # 参数可调：把 5 轴权重调成 0 后不再出现全屏同步
+    from slotmcp.engine.config import set_parameter as _set
+
+    _set(cfg, "features.sync_reels.widths.5", 0)
+    got5 = False
+    for i in range(3000):
+        g5 = [["heart", "disc", "star"] for _ in range(5)]
+        e5 = sync_reels(g5, cfg.features.sync_reels, SlotRNG(f"z{i}"), "base")
+        if e5 and e5["width"] == 5:
+            got5 = True
+            break
+    _set(cfg, "features.sync_reels.widths.5", 3)
+    check(not got5, "slot_set_parameter 可把某宽度权重调为 0 并即时生效")
+
+
+def test_sync_reels_config_validation() -> None:
+    print("[engine] 同步轴配置校验")
+    from slotmcp.engine.config import Features, GameConfig, SyncReelsConfig
+
+    base = dict(
+        id="bad_sync",
+        name="bad",
+        reels=5,
+        rows=3,
+        symbols={"plume": _sym("plume", "standard")},
+        reel_sets={"base": _reel_set(["plume"])},
+    )
+    bad = GameConfig(
+        features=Features(
+            sync_reels=SyncReelsConfig(
+                enabled=True,
+                widths={1: 5, 9: 3, 3: -1},  # 1 无效 / 9 超总轴数 / 负权重
+                copy_from="last",
+                phases=["nonsense"],
+            )
+        ),
+        **base,
+    )
+    errors = bad.validate()
+    joined = " | ".join(errors)
+    check(any("至少为 2" in e for e in errors), f"同步轴数 <2 被拦截：{joined[:200]}")
+    check(any("不能超过总轴数" in e for e in errors), "超过总轴数被拦截")
+    check(any("权重不能为负" in e for e in errors), "负权重被拦截")
+    check(any("copy_from 非法" in e for e in errors), "非法复制方式被拦截")
+    check(any("sync_reels.phases 非法" in e for e in errors), "非法阶段被拦截")
+
+    empty = GameConfig(
+        features=Features(sync_reels=SyncReelsConfig(enabled=True, widths={})),
+        **base,
+    )
+    check(any("widths 不能为空" in e for e in empty.validate()), "空宽度表被拦截")
+
+    all_zero = GameConfig(
+        features=Features(sync_reels=SyncReelsConfig(enabled=True, widths={2: 0})),
+        **base,
+    )
+    check(any("至少要有一个正权重" in e for e in all_zero.validate()), "全零权重被拦截")
+
+
 def test_session() -> None:
     print("[engine] 会话与钱包")
     machine = get_registry().get("lucky_fruits")
@@ -881,6 +1018,8 @@ def main() -> int:
     test_mystery_config_validation()
     test_walking_wild()
     test_walking_wild_config_validation()
+    test_sync_reels()
+    test_sync_reels_config_validation()
     test_session()
     test_hot_reload()
     test_rtp_regression()

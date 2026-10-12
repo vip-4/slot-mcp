@@ -99,6 +99,7 @@
         "mystery",
         "pick_bonus",
         "random_wild",
+        "sync_reels",
         "walking_wild"
       ]
     },
@@ -193,6 +194,7 @@
         "mystery",
         "pick_bonus",
         "random_wild",
+        "sync_reels",
         "walking_wild"
       ]
     },
@@ -278,6 +280,7 @@
         "mystery",
         "pick_bonus",
         "random_wild",
+        "sync_reels",
         "walking_wild"
       ]
     },
@@ -400,6 +403,7 @@
         "mystery",
         "pick_bonus",
         "random_wild",
+        "sync_reels",
         "walking_wild"
       ]
     },
@@ -494,6 +498,7 @@
         "mystery",
         "pick_bonus",
         "random_wild",
+        "sync_reels",
         "walking_wild"
       ]
     },
@@ -579,6 +584,102 @@
         "mystery",
         "pick_bonus",
         "random_wild",
+        "sync_reels",
+        "walking_wild"
+      ]
+    },
+    {
+      "id": "neon_twins",
+      "name": "霓虹双子",
+      "reels": 5,
+      "rows": 3,
+      "pay_mode": "lines",
+      "theme": {
+        "id": "neon",
+        "name": "霓虹双子",
+        "palette": {
+          "grid": "#241546",
+          "reel": "#2f1a58",
+          "win": "#7cf6c8",
+          "wild": "#f0f8ff",
+          "bonus": "#ff9ecd"
+        },
+        "cabinet_color": "#1b1035",
+        "background": "#0a0618",
+        "accent": "#ff6b9d",
+        "music": ""
+      },
+      "symbols": [
+        {
+          "id": "heart",
+          "name": "霓虹心",
+          "kind": "standard",
+          "color": "#ff6b9d",
+          "glyph": "💖"
+        },
+        {
+          "id": "disc",
+          "name": "唱片",
+          "kind": "standard",
+          "color": "#b8a4ff",
+          "glyph": "💿"
+        },
+        {
+          "id": "phones",
+          "name": "耳机",
+          "kind": "standard",
+          "color": "#8ad7ff",
+          "glyph": "🎧"
+        },
+        {
+          "id": "guitar",
+          "name": "吉他",
+          "kind": "standard",
+          "color": "#ffd45c",
+          "glyph": "🎸"
+        },
+        {
+          "id": "dice",
+          "name": "骰子",
+          "kind": "standard",
+          "color": "#c6a4ff",
+          "glyph": "🎲"
+        },
+        {
+          "id": "star",
+          "name": "星标",
+          "kind": "standard",
+          "color": "#7cf6c8",
+          "glyph": "⭐"
+        },
+        {
+          "id": "wild",
+          "name": "棱镜 Wild",
+          "kind": "wild",
+          "color": "#f0f8ff",
+          "glyph": "🔷"
+        },
+        {
+          "id": "scatter",
+          "name": "双子门 Scatter",
+          "kind": "scatter",
+          "color": "#ff9ecd",
+          "glyph": "🚪"
+        }
+      ],
+      "features": [
+        "cascade",
+        "collect",
+        "colossal",
+        "expanding_wild",
+        "free_spins",
+        "gamble",
+        "hold_win",
+        "multiplier_wild",
+        "mystery",
+        "pick_bonus",
+        "random_wild",
+        "sync_reels",
         "walking_wild"
       ]
     },
@@ -685,6 +786,7 @@
         "mystery",
         "pick_bonus",
         "random_wild",
+        "sync_reels",
         "walking_wild"
       ]
     },
@@ -786,6 +888,7 @@
         "mystery",
         "pick_bonus",
         "random_wild",
+        "sync_reels",
         "walking_wild"
       ]
     },
@@ -878,6 +981,7 @@
         "mystery",
         "pick_bonus",
         "random_wild",
+        "sync_reels",
         "walking_wild"
       ]
     },
@@ -986,6 +1090,7 @@
         "mystery",
         "pick_bonus",
         "random_wild",
+        "sync_reels",
         "walking_wild"
       ]
     }

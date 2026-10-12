@@ -365,7 +365,7 @@ def op_animate_spin(params: Dict[str, Any]) -> Dict[str, Any]:
 
 
 # 事件类型 -> 高亮用途（只挑有明确落点的事件，其余保持原样）
-_EVENT_KINDS = ("random_wild", "collect", "expanding_wild", "hold_win", "walking_wild", "colossal")
+_EVENT_KINDS = ("random_wild", "collect", "expanding_wild", "hold_win", "walking_wild", "colossal", "sync_reels")
 
 
 def _apply_highlights(
@@ -387,6 +387,14 @@ def _apply_highlights(
                 for win in step.get("wins") or []:
                     if win.get("kind") == "collect":
                         positions = list(positions) + list(win.get("positions") or [])
+            elif kind == "sync_reels":
+                # 同步轴事件只带轴号：整轴全部格子都参与高亮
+                expanded = []
+                rows = len(last_grid[0]) if last_grid else 0
+                for reel_idx in ev.get("reels") or []:
+                    for row_idx in range(rows):
+                        expanded.append((int(reel_idx), row_idx))
+                positions = expanded
             for pos in positions:
                 if not isinstance(pos, (list, tuple)) or len(pos) != 2:
                     continue

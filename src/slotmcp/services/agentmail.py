@@ -62,6 +62,7 @@ class AgentMailClient:
         cron: List[Dict[str, Any]],
         playcanvas: Dict[str, Any],
         geo: Optional[Dict[str, Any]] = None,
+        db: Optional[List[str]] = None,
     ) -> str:
         """把部署结果渲染为纯文本报告（邮件正文与控制台共用）。"""
         lines = [
@@ -106,5 +107,9 @@ class AgentMailClient:
                 lines.append(f"   [{mark}] {hit.get('title','')[:40]} - {hit.get('link','')}")
             if geo.get("error"):
                 lines.append(f"  提示: {geo['error']}")
+        if db:
+            lines += ["", "【数据库（部署审计 / 统计快照）】"]
+            for note in db:
+                lines.append(f"  - {note}")
         lines += ["", "-- 本邮件由 slotmcp 部署流水线自动发送"]
         return "\n".join(lines)

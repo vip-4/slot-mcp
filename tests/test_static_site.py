@@ -148,6 +148,17 @@ def main() -> int:
         llms = (out / "llms.txt").read_text(encoding="utf-8")
         check("## 关键事实" in llms and "## 机台" in llms, "llms.txt 含 AI 摘要结构")
 
+        # 数据库统计快照（若存在）：必须静态注入，站点运行时不查库
+        stats_file = ROOT / "deploy" / "stats.json"
+        if stats_file.is_file():
+            print("== 数据库统计快照（静态注入） ==")
+            stats = json.loads(stats_file.read_text(encoding="utf-8"))
+            check('id="stats"' in html and "仿真局数" in html, "统计快照以静态 HTML 注入首页")
+            check("不会在运行时访问数据库" in html, "页面声明运行时不访问数据库")
+            for row in stats.get("rtp", [])[:1]:
+                check(f"{float(row['rtp']) * 100:.2f}%" in html, f"{row['game_id']} 实测 RTP 出现在页面中")
+            check("验证数据" in llms, "llms.txt 含验证数据摘要")
+
         print("== PNG 资源 ==")
         png = (out / "assets" / "og-image.png").read_bytes()
         check(png[:8] == b"\x89PNG\r\n\x1a\n", "og-image.png 为合法 PNG")

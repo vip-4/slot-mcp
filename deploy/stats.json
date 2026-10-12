@@ -1,0 +1,48 @@
+{
+  "schema": "slotmcp.stats/1",
+  "generated": "2026-10-12T19:10:30+00:00",
+  "source": "neon:primary",
+  "rtp": [
+    {
+      "game_id": "candy_carnival",
+      "runs": 1,
+      "spins": 20000,
+      "rtp": 0.9743
+    },
+    {
+      "game_id": "dragon_palace",
+      "runs": 1,
+      "spins": 20000,
+      "rtp": 0.9674
+    },
+    {
+      "game_id": "lucky_fruits",
+      "runs": 1,
+      "spins": 20000,
+      "rtp": 0.9576
+    },
+    {
+      "game_id": "pharaoh_tomb",
+      "runs": 1,
+      "spins": 20000,
+      "rtp": 0.8951
+    },
+    {
+      "game_id": "star_expedition",
+      "runs": 1,
+      "spins": 20000,
+      "rtp": 0.9627
+    }
+  ],
+  "top_scores": [
+    {
+      "game_id": "lucky_fruits",
+      "player": "pilot",
+      "best_multiplier": 18.4
+    }
+  ],
+  "players": 1,
+  "deploy_runs": 0,
+  "last_deploy": null,
+  "sim_spins": 100000
+}

@@ -16,5 +16,22 @@
     "project_id": 1583126,
     "scene": "Main Scene",
     "token": "填入 PlayCanvas API Token（或设置环境变量 PLAYCANVAS_TOKEN）"
+  },
+
+  "metaso": {
+    "api_key": "填入 Metaso API Key（或设置环境变量 METASO_API_KEY）",
+    "query": "5 款免费在线老虎机 SLOT 合集 静态站"
+  },
+
+  "neon": {
+    "database_url": "postgresql://...（主库，或设置环境变量 NEON_DATABASE_URL）",
+    "mirror_url": "postgresql://...（镜像库，或设置环境变量 NEON_DATABASE_URL_2）"
+  },
+
+  "supabase": {
+    "url": "https://<ref>.supabase.co",
+    "key": "sb_publishable_...",
+    "ref": "<ref>",
+    "access_token": "sbp_...（Management API，用于查询项目状态）"
   }
 }

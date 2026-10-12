@@ -19,12 +19,14 @@ from slotmcp.services.media import (  # noqa: E402
     PexelsClient,
 )
 from slotmcp.services.metaso import MetasoClient  # noqa: E402
+from slotmcp.services.neon import NeonClient  # noqa: E402
+from slotmcp.services.supabase import SupabaseClient  # noqa: E402
 from slotmcp.services.playcanvas import PlayCanvasClient, build_scene_descriptor  # noqa: E402
 
 FAILS = 0
 TESTS = 0
 
-STATE = {"jobs": [], "sent": [], "next_id": 1001}
+STATE = {"jobs": [], "sent": [], "next_id": 1001, "sql": [], "neon_headers": {}, "supa_body": None, "last_get": ""}
 
 
 def check(cond: bool, msg: str) -> None:
@@ -61,6 +63,12 @@ class Handler(BaseHTTPRequestHandler):
             return self._json(200, {"jobs": STATE["jobs"]})
         if p == "/inboxes-meta":
             return self._json(200, {"ok": True})
+        if p.startswith("/rest/v1/"):  # Supabase（PostgREST）
+            table = p.split("/")[-1].split("?")[0]
+            STATE["last_get"] = p
+            if table == "slot_scores":
+                return self._json(200, [{"game_id": "lucky_fruits", "best_multiplier": 18.4}])
+            return self._json(200, [{"ok": 1}])
         if p.endswith("/scenes"):
             return self._json(200, {"result": [{"id": 1, "name": "Main Scene"}]})
         if p.endswith("/assets"):
@@ -86,6 +94,18 @@ class Handler(BaseHTTPRequestHandler):
         if p.endswith("/messages/send"):
             STATE["sent"].append(body)
             return self._json(200, {"message_id": "<stub>", "thread_id": "t-1"})
+        if p == "/sql":  # Neon HTTP SQL
+            query = body.get("query", "")
+            STATE["sql"].append(query)
+            STATE["neon_headers"] = dict(self.headers)
+            if "boom" in query:
+                return self._json(400, {"code": "42601", "message": "syntax error"})
+            if query.strip().lower().startswith("select version"):
+                return self._json(200, {"rows": [{"version": "PostgreSQL 16.3"}]})
+            return self._json(200, {"command": "OK", "rows": [], "rowCount": 1})
+        if p.startswith("/rest/v1/"):  # Supabase 写入
+            STATE["supa_body"] = body
+            return self._json(201, [dict(body, id=1)])
         self._json(404, {"error": "not found"})
 
     def do_PUT(self):
@@ -208,6 +228,33 @@ def main() -> int:
         pix = PixabayClient("k").normalize({"id": 2, "pageURL": "u", "user": "B", "largeImageURL": "https://cdn/x.jpg"})
         check(pix["provider"] == "pixabay" and pix["raw"].endswith("x.jpg"), "Pixabay 结果归一化")
         check(len(THEME_QUERIES) == 5 and all("alt" in v for v in THEME_QUERIES.values()), "5 款机台都有检索词与中文 alt")
+
+        print("== Neon（HTTP SQL） ==")
+        neon = NeonClient("postgresql://u:p@ep-demo.eu.neon.tech/db", base_url=f"{base}/sql")
+        ok, rows, err = neon.sql("select version()")
+        check(ok and rows[0]["version"].startswith("PostgreSQL"), f"执行 SQL 并解析 rows：{rows}")
+        check(
+            STATE["neon_headers"].get("Neon-Connection-String", "").startswith("postgresql://"),
+            "请求头带 Neon-Connection-String（无需本地驱动）",
+        )
+        ok, err = neon.execute("insert into t values (1) boom")
+        check(not ok and "syntax error" in err, f"错误按结构化返回而非抛异常：{err[:40]}")
+        results = neon.ensure_schema(["create table if not exists a (id int)", "create index if not exists b"])
+        check(all(r[1] for r in results) and len(results) == 2, "建表语句逐条执行")
+        ok_insert, _ = neon.insert("slot_scores", {"game_id": "lucky_fruits", "player": "o'brien", "best_multiplier": 3.5})
+        check(ok_insert and "o''brien" in STATE["sql"][-1], f"字面量转义单引号：{STATE['sql'][-1][:70]}")
+
+        print("== Supabase（PostgREST） ==")
+        sb = SupabaseClient(base, "sb_publishable_x")
+        ok, detail = sb.ping()
+        check(ok, f"REST 探活：{detail}")
+        ok, data, _ = sb.select("slot_scores", "select=game_id&order=best_multiplier.desc&limit=5")
+        check(ok and data[0]["best_multiplier"] == 18.4, f"查询排行榜：{data}")
+        ok, data, _ = sb.insert("slot_scores", {"game_id": "lucky_fruits", "player": "p", "best_multiplier": 9})
+        check(ok and data[0]["id"] == 1, f"写入成绩：{data}")
+        down = SupabaseClient("http://127.0.0.1:9", "k")  # 关闭端口模拟「项目已暂停」
+        ok, detail = down.ping()
+        check(not ok and "不可达" in detail, f"项目暂停时降级为不可达提示：{detail[:30]}")
 
         print("== Metaso GEO 监测 ==")
         ms = MetasoClient("k", base_url=base)

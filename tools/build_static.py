@@ -222,6 +222,44 @@ def load_media() -> Dict[str, Dict[str, Any]]:
     return {e["game"]: e for e in payload.get("entries", [])}
 
 
+def load_stats() -> Optional[Dict[str, Any]]:
+    """读取 `deploy/stats.json`（由 tools/db_sync.py 从数据库聚合而来）。"""
+    path = ROOT / "deploy" / "stats.json"
+    if not path.is_file():
+        return None
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except ValueError:
+        return None
+
+
+def stats_section(stats: Optional[Dict[str, Any]], names: Dict[str, str]) -> str:
+    """把数据库聚合结果渲染为**静态**事实段落（构建期注入，站点运行时不查库）。"""
+    if not stats or not stats.get("rtp"):
+        return ""
+    rows = "".join(
+        f"<tr><th scope=\"row\">{escape(names.get(r['game_id'], r['game_id']))}</th>"
+        f"<td>{r['spins']:,}</td><td>{float(r['rtp']) * 100:.2f}%</td><td>{r['runs']}</td></tr>"
+        for r in stats["rtp"]
+    )
+    tops = "".join(
+        f"<li>{escape(s['player'])} · {escape(names.get(s['game_id'], s['game_id']))} · "
+        f"{float(s['best_multiplier']):.1f}x</li>"
+        for s in (stats.get("top_scores") or [])
+    )
+    generated = escape(str(stats.get("generated", "")))
+    return f"""<section id="stats" aria-labelledby="stats-title">
+  <h2 id="stats-title">验证与社区数据</h2>
+  <p>以下数据由构建流水线从数据库聚合后<strong>静态注入</strong>页面（最近更新：<time>{generated}</time>），
+     页面本身不会在运行时访问数据库。</p>
+  <div class="table-scroll"><table>
+    <caption>各机台仿真验证结果（累计 {stats.get('sim_spins', 0):,} 局）</caption>
+    <thead><tr><th scope="col">机台</th><th scope="col">仿真局数</th><th scope="col">实测 RTP</th><th scope="col">批次</th></tr></thead>
+    <tbody>{rows}</tbody></table></div>
+  {f'<h3>社区最高倍率</h3><ol>{tops}</ol>' if tops else ''}
+</section>"""
+
+
 def media_image(entry: Optional[Dict[str, Any]], kind: str) -> Optional[Dict[str, Any]]:
     if not entry:
         return None
@@ -430,6 +468,8 @@ def cards_html(games: List[Dict[str, Any]]) -> str:
 # --------------------------------------------------------------------------- 页面
 def build_index(games: List[Dict[str, Any]], site_url: str) -> str:
     default = games[0]
+    stats = load_stats()
+    names = {g["id"]: g["name"] for g in games}
     rtp_values = [MEASURED_RTP.get(g["id"], g["rtp_num"]) for g in games]
     facts = f"""<ul class="fact-list">
   <li>共 5 款主题机台：幸运水果、糖果狂欢、龙宫探宝、法老之墓、星际远征，全部共用一套 CONFIG 引擎。</li>
@@ -541,6 +581,8 @@ def build_index(games: List[Dict[str, Any]], site_url: str) -> str:
     <p class="small muted">切换机台后下表会同步更新；完整符号与赔率以各机台详情页为准。</p>
     <div id="paytable">{paytable_html(default["cfg"])}</div>
   </section>
+
+  {stats_section(stats, names)}
 
   {terms_html()}
   {faq_html()}
@@ -911,6 +953,8 @@ def main() -> int:
         f"Sitemap: {site_url}/sitemap.xml\n",
     )
 
+    stats = load_stats()
+    names = {g["id"]: g["name"] for g in games}
     llms = [
         f"# {SITE_NAME}",
         "",
@@ -933,6 +977,14 @@ def main() -> int:
             f"波动{g['volatility']}，目标 RTP {g['rtp']}%（实测 {g['measured_rtp']}%），"
             f"特性：{'、'.join(g['features']) or '基础赔付'}"
         )
+    if stats and stats.get("rtp"):
+        llms += [
+            "",
+            "## 验证数据（构建期由数据库聚合后静态注入）",
+            f"- 累计仿真 {stats.get('sim_spins', 0)} 局，最近更新 {stats.get('generated', '')}",
+        ]
+        for r in stats["rtp"]:
+            llms.append(f"- {names.get(r['game_id'], r['game_id'])}：{r['spins']} 局，实测 RTP {float(r['rtp']) * 100:.2f}%")
     llms += ["", "## 常见问答"]
     for x in FAQ:
         llms.append(f"Q：{x['q']}\nA：{x['a']}")

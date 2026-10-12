@@ -108,7 +108,35 @@ python -m slotmcp.tools.deploy_ops --geo
 
 > 上线前基线示例：`命中本站 0/5 条` —— 站点未上线时属正常，上线并收录后应转为 `≥1`。
 
-## 7. PlayCanvas 三维同步
+## 7. 数据库（Neon 主库 + 镜像库 / Supabase 可选）
+
+**原则：站点运行时不访问任何数据库。** 数据库只服务构建期与运维期，聚合结果以
+静态 JSON 注入页面，因此发布产物仍是零后端依赖的纯静态站。
+
+```bash
+$env:NEON_DATABASE_URL   = "postgresql://..."   # 主库
+$env:NEON_DATABASE_URL_2 = "postgresql://..."   # 镜像库（异地）
+python -m slotmcp.tools.db_sync --status        # 连通性（含 Supabase 项目状态）
+python -m slotmcp.tools.db_sync --init          # 两库建表
+python -m slotmcp.tools.db_sync --rtp 20000     # 仿真 RTP 回归写库
+python -m slotmcp.tools.db_sync --snapshot      # 聚合 -> deploy/stats.json
+python -m slotmcp.tools.deploy_ops --db         # 写一条部署审计
+```
+
+| 表 | 内容 |
+| --- | --- |
+| `slot_deploy_log` | 每次运维的站点地址、检查结果、是否通过 |
+| `slot_rtp_runs` | 每款机台的仿真局数 / 实测 RTP / 命中率 |
+| `slot_scores` | 社区成绩（玩家、机台、最高倍率） |
+
+Neon 走 HTTP SQL（`POST https://<pooler-host>/sql` + `Neon-Connection-String` 头），
+**不需要 psycopg 之类的本地驱动**，与项目「零第三方依赖」一致。
+
+Supabase 项目当前状态为 `INACTIVE`（REST 域名无法解析），客户端已实现
+`ping/select/insert` 并在不可达时降级为「项目可能已暂停」的提示——项目恢复后
+即可用 publishable key 直接从前端读写排行榜，无需自建后端。
+
+## 8. PlayCanvas 三维同步
 
 可用作用域（实测）：`GET /projects/{id}/scenes` 与 `GET /projects/{id}/assets` 返回 200；
 `GET /projects/{id}` 返回 403（Token 缺 project 作用域），客户端对此**降级但不抛异常**。
@@ -146,11 +174,12 @@ python -m slotmcp.tools.deploy_ops --geo
 
 仓库根目录即站点内容，所以 Pages 不需要指定子目录。
 
-## 9. 自测
+## 10. 自测
 
-`tests/test_services.py` 用**本地桩服务**（不发真实请求）验证 29 项：请求体形态、
+`tests/test_services.py` 用**本地桩服务**（不发真实请求）验证 38 项：请求体形态、
 `schedule` 换算与非法间隔拒绝、upsert 幂等（创建→更新→仍只有一条）、
-403 降级、图片结果归一化与裁剪 URL、Metaso 命中判定与错误降级、场景描述导出、报告渲染。
+403 降级、图片结果归一化与裁剪 URL、Metaso 命中判定与错误降级、
+Neon HTTP SQL（含字面量转义与结构化错误）、Supabase REST 读写与暂停降级、场景导出、报告渲染。
 
 ```bash
 python tests/run_tests.py services

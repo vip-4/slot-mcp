@@ -227,6 +227,8 @@ python -m slotmcp.tools.deploy_ops --all --dry-run # 只打印计划动作
 | PlayCanvas | 三维机台场景同步 | `GET /projects/{id}/scenes|assets`；项目详情 403 时降级不抛异常；`--sync-scene` 导出 `deploy/playcanvas_scene.json` |
 | Pexels / Pixabay | 机台主题配图 | `python -m slotmcp.tools.fetch_media`；两服务都需浏览器 UA，Pexels CDN 直接裁剪 1200×630 作 OG 图；素材清单 `deploy/media.json` + 署名 `CREDITS.md` |
 | Metaso | GEO 收录与 AI 摘要监测 | `--geo`：`POST /api/v1/search`，判断 AI 搜索是否命中本站、摘要内容 |
+| Neon（主 + 镜像） | 部署审计 / RTP 回归 / 统计快照 | `python -m slotmcp.tools.db_sync --init/--rtp/--snapshot`；HTTP SQL 无需本地驱动；聚合结果静态注入页面，**站点运行时不查库** |
+| Supabase | 排行榜（可选增强） | 项目当前 `INACTIVE`，客户端已实现 `ping/select/insert` 并在不可达时降级；恢复后前端可用 publishable key 直连 |
 
 凭证只从环境变量或 `deploy/services.local.json`（已 gitignore）读取，绝不入库。
 详见 `docs/DEPLOY_OPS.md`。

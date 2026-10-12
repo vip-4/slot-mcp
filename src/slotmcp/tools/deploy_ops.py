@@ -29,6 +29,7 @@ from slotmcp.services.agentmail import AgentMailClient  # noqa: E402
 from slotmcp.services.cronjob import CronJobClient, every_n_minutes  # noqa: E402
 from slotmcp.services.http import head_ok  # noqa: E402
 from slotmcp.services.metaso import MetasoClient  # noqa: E402
+from slotmcp.tools.db_sync import record_deploy  # noqa: E402
 from slotmcp.services.playcanvas import (  # noqa: E402
     PlayCanvasClient,
     build_scene_descriptor,
@@ -188,6 +189,27 @@ def run_playcanvas(cfg: Dict[str, Any], dry_run: bool, sync_scene: bool) -> Dict
     return out
 
 
+def run_db(cfg: Dict[str, Any], dry_run: bool, checks: List[Dict[str, Any]]) -> List[str]:
+    """把本次运维结果写入 Neon（部署审计），站点本身不依赖数据库。"""
+    if dry_run:
+        return ["[DRY] 将记录 1 条部署审计（Neon）"]
+    try:
+        notes = record_deploy(
+            cfg["site_url"],
+            checks,
+            all(c["ok"] for c in checks) if checks else True,
+            f"页面 {len(checks)} 项检查",
+        )
+    except Exception as exc:  # noqa: BLE001
+        # 数据库不可用时不能拖垮部署：记录为降级说明
+        return [f"降级：数据库不可用（{type(exc).__name__}）"]
+    if not notes:
+        notes = ["未配置 NEON_DATABASE_URL，跳过审计记录"]
+    for note in notes:
+        print(f"  {note}")
+    return notes
+
+
 def run_geo(cfg: Dict[str, Any], dry_run: bool) -> Dict[str, Any]:
     """GEO 监测：问一次 AI 搜索，看站点是否被收录、摘要怎么描述。"""
     if dry_run or not cfg["metaso_key"]:
@@ -216,6 +238,7 @@ def run_email(
     playcanvas: Dict[str, Any],
     facts: Dict[str, Any],
     geo: Optional[Dict[str, Any]] = None,
+    db: Optional[List[str]] = None,
 ) -> Dict[str, Any]:
     to = recipients or list(cfg["agentmail_to"])
     subject = f"[Slot MCP] 静态站部署报告 · {cfg['site_url']}"
@@ -227,6 +250,7 @@ def run_email(
         cron=cron,
         playcanvas=playcanvas,
         geo=geo,
+        db=db,
     )
     if not to:
         print("  [NG] 未指定收件人（用 --email 或配置 agentmail.to / AGENTMAIL_TO）")
@@ -255,6 +279,7 @@ def main() -> int:
     ap.add_argument("--playcanvas", action="store_true", help="读取 PlayCanvas 项目清单")
     ap.add_argument("--sync-scene", action="store_true", help="导出机台场景描述 JSON")
     ap.add_argument("--geo", action="store_true", help="用 Metaso 检查 AI 搜索收录与摘要（GEO 监测）")
+    ap.add_argument("--db", action="store_true", help="把本次运维结果写入 Neon（部署审计）")
     ap.add_argument("--all", action="store_true", help="执行全部动作")
     ap.add_argument("--dry-run", action="store_true", help="只打印计划动作，不调用外部服务")
     args = ap.parse_args()
@@ -274,6 +299,7 @@ def main() -> int:
     cron: List[Dict[str, Any]] = []
     playcanvas: Dict[str, Any] = {}
     geo: Dict[str, Any] = {}
+    db: List[str] = []
 
     if args.check or do_all:
         print("\n== 健康检查 ==")
@@ -287,9 +313,12 @@ def main() -> int:
     if args.geo or do_all:
         print("\n== GEO 监测（Metaso） ==")
         geo = run_geo(cfg, args.dry_run)
+    if args.db or do_all:
+        print("\n== 数据库审计（Neon） ==")
+        db = run_db(cfg, args.dry_run, checks)
     if args.email is not None or do_all:
         print("\n== 邮件报告（AgentMail） ==")
-        run_email(cfg, args.email or [], args.dry_run, checks, cron, playcanvas, facts, geo)
+        run_email(cfg, args.email or [], args.dry_run, checks, cron, playcanvas, facts, geo, db)
 
     failed = [c for c in checks if not c["ok"]] + [j for j in cron if j.get("state") == "failed"]
     print()

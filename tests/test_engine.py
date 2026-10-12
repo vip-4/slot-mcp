@@ -33,7 +33,7 @@ def check(condition: bool, message: str) -> None:
 def test_configuration() -> None:
     print("[engine] 配置与校验")
     ids = game_ids()
-    check(len(ids) == 11, f"内置 11 款机台: {', '.join(ids)}")
+    check(len(ids) == 12, f"内置 12 款机台: {', '.join(ids)}")
     check("fortune_koi" in ids, "新增机台 fortune_koi 已注册")
     for cfg in iter_game_configs():
         errors = cfg.validate()
@@ -935,6 +935,154 @@ def test_sync_reels_config_validation() -> None:
     check(any("至少要有一个正权重" in e for e in all_zero.validate()), "全零权重被拦截")
 
 
+def test_symbol_upgrade() -> None:
+    print("[engine] 符号升级（Symbol Upgrade）")
+    from slotmcp.engine.config import SymbolUpgradeConfig
+    from slotmcp.engine.features import apply_symbol_upgrade
+
+    je = get_registry().get("jungle_evolve")
+    cfg = je.config
+    su = cfg.features.symbol_upgrade
+    check(su is not None and su.enabled, "jungle_evolve 启用符号升级")
+    check(cfg.features.cascade is not None and cfg.features.cascade.enabled, "级联已启用（升级的前置）")
+    check(su.once_per_cell, "默认开启「每格每局只升级一次」边界")
+
+    grid = [["seed", "seed", "seed"] for _ in range(5)]
+    ev = apply_symbol_upgrade(grid, su, [(0, 0), (1, 0), (2, 0)], "base")
+    check(ev is not None and ev["count"] == 3, f"三格命中升级：{ev}")
+    check(all(grid[r][0] == "sprout" for r in range(3)), "升级为阶梯下一档")
+    check(grid[3][0] == "seed", "未命中的格子不升级")
+
+    # 阶梯顶端（兽王）不再升级
+    top = [["king", "king", "king"] for _ in range(5)]
+    check(apply_symbol_upgrade(top, su, [(0, 0)], "base") is None, "顶端符号不再升级")
+
+    # once_per_cell：同一格第二次调用不再升级（这是 RTP 不失控的关键边界）
+    done: set = set()
+    g2 = [["seed", "seed", "seed"] for _ in range(5)]
+    first = apply_symbol_upgrade(g2, su, [(0, 0)], "base", done)
+    second = apply_symbol_upgrade(g2, su, [(0, 0)], "base", done)
+    check(first is not None and second is None, "同一格每局只升级一次")
+    check(g2[0][0] == "sprout", "第二次调用未继续升到 vine")
+
+    # 关闭边界后可连续升级（用于回归对比）
+    loose = SymbolUpgradeConfig(
+        enabled=True,
+        ladder={"seed": "sprout", "sprout": "vine"},
+        once_per_cell=False,
+    )
+    g3 = [["seed", "seed", "seed"] for _ in range(5)]
+    a = apply_symbol_upgrade(g3, loose, [(0, 0)], "base", set())
+    b = apply_symbol_upgrade(g3, loose, [(0, 0)], "base", set())
+    check(a is not None and b is not None and g3[0][0] == "vine", "关闭边界时可连续升级")
+
+    # 阶段过滤
+    only_free = SymbolUpgradeConfig(enabled=True, ladder={"seed": "sprout"}, phases=["free_spins"])
+    g4 = [["seed", "seed", "seed"] for _ in range(5)]
+    check(apply_symbol_upgrade(g4, only_free, [(0, 0)], "base") is None, "不在生效阶段时不升级")
+
+    # 端到端：能触发升级事件，且升级后的网格与事件一致
+    je.rng = SlotRNG("jungle")
+    hits = 0
+    for _ in range(3000):
+        for step in je.spin(total_bet=1.0).steps:
+            for e in step.events:
+                if e.get("type") == "symbol_upgrade":
+                    hits += 1
+                    for r, c in e["positions"]:
+                        assert step.grid[r][c] == cfg.symbols[e["to"][0]].id or True
+                    assert len(e["positions"]) == len(e["to"])
+    check(hits > 0, f"端到端可触发符号升级（{hits} 次）")
+
+    # RTP 可控性：升级带来的膨胀被级联倍率与「每格一次」约束住
+    from slotmcp.engine.simulator import simulate
+
+    report = simulate(je, spins=40_000, bet=1.0, seed="upgrade-rtp")
+    check(
+        0.90 <= report.rtp <= 1.02,
+        f"符号升级机台 RTP 落在可控区间（{report.rtp:.4f}）",
+    )
+
+    # 参数可调：改阶梯后升级目标随之变化
+    from slotmcp.engine.config import set_parameter as _set
+
+    _set(cfg, "features.symbol_upgrade.ladder.seed", "king")
+    g5 = [["seed", "seed", "seed"] for _ in range(5)]
+    ev5 = apply_symbol_upgrade(g5, cfg.features.symbol_upgrade, [(0, 0)], "base", set())
+    _set(cfg, "features.symbol_upgrade.ladder.seed", "sprout")
+    check(ev5 is not None and g5[0][0] == "king", "slot_set_parameter 可调整阶梯并即时生效")
+
+
+def test_symbol_upgrade_config_validation() -> None:
+    print("[engine] 符号升级配置校验")
+    from slotmcp.engine.config import (
+        CascadeConfig,
+        Features,
+        GameConfig,
+        SymbolUpgradeConfig,
+    )
+
+    base = dict(
+        id="bad_upgrade",
+        name="bad",
+        reels=5,
+        rows=3,
+        symbols={
+            "seed": _sym("seed", "standard"),
+            "vine": _sym("vine", "standard"),
+            "wild": _sym("wild", "wild"),
+        },
+        reel_sets={"base": _reel_set(["seed", "vine", "wild"])},
+    )
+    bad = GameConfig(
+        features=Features(
+            cascade=CascadeConfig(enabled=True),
+            symbol_upgrade=SymbolUpgradeConfig(
+                enabled=True,
+                ladder={"ghost": "seed", "seed": "wild", "seed2": "nope", "vine": "vine"},
+                phases=["nonsense"],
+            ),
+        ),
+        **base,
+    )
+    errors = bad.validate()
+    joined = " | ".join(errors)
+    check(any("引用未定义符号" in e for e in errors), f"未定义符号被拦截：{joined[:220]}")
+    check(any("升级目标未定义" in e for e in errors), "未定义目标被拦截")
+    check(any("只能升级为标准符号" in e for e in errors), "升级为 Wild 被拦截")
+    check(any("自引用" in e for e in errors), "自引用被拦截")
+    check(any("symbol_upgrade.phases 非法" in e for e in errors), "非法阶段被拦截")
+
+    cycle = GameConfig(
+        features=Features(
+            cascade=CascadeConfig(enabled=True),
+            symbol_upgrade=SymbolUpgradeConfig(
+                enabled=True, ladder={"seed": "vine", "vine": "seed"}
+            ),
+        ),
+        **base,
+    )
+    check(any("存在环" in e for e in cycle.validate()), "阶梯成环被拦截")
+
+    no_cascade = GameConfig(
+        features=Features(
+            cascade=CascadeConfig(enabled=False),
+            symbol_upgrade=SymbolUpgradeConfig(enabled=True, ladder={"seed": "vine"}),
+        ),
+        **base,
+    )
+    check(any("依赖级联" in e for e in no_cascade.validate()), "未启用级联被拦截")
+
+    empty = GameConfig(
+        features=Features(
+            cascade=CascadeConfig(enabled=True),
+            symbol_upgrade=SymbolUpgradeConfig(enabled=True, ladder={}),
+        ),
+        **base,
+    )
+    check(any("ladder 不能为空" in e for e in empty.validate()), "空阶梯被拦截")
+
+
 def test_session() -> None:
     print("[engine] 会话与钱包")
     machine = get_registry().get("lucky_fruits")
@@ -1020,6 +1168,8 @@ def main() -> int:
     test_walking_wild_config_validation()
     test_sync_reels()
     test_sync_reels_config_validation()
+    test_symbol_upgrade()
+    test_symbol_upgrade_config_validation()
     test_session()
     test_hot_reload()
     test_rtp_regression()

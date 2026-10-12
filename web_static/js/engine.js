@@ -196,6 +196,34 @@
     };
   }
 
+  // 符号升级：与 Python 端 apply_symbol_upgrade 同构（不消耗随机数）
+  // `done` 记录本局已升级的格子：once_per_cell 时每格只升级一次
+  function applySymbolUpgrade(grid, su, positions, phase, done) {
+    if (!su || !su.enabled) return null;
+    var phases = su.phases || ['base', 'free_spins'];
+    if (phases.indexOf(phase) < 0) return null;
+
+    var upgraded = [];
+    var toSymbols = [];
+    positions.forEach(function (pos) {
+      var reel = pos[0] | 0;
+      var row = pos[1] | 0;
+      if (reel < 0 || reel >= grid.length) return;
+      if (!grid[reel] || row < 0 || row >= grid[reel].length) return;
+      var key = reel + ',' + row;
+      if (su.once_per_cell && done && done[key]) return;
+      var current = grid[reel][row];
+      var next = (su.ladder || {})[current];
+      if (!next || next === current) return;
+      grid[reel][row] = next;
+      upgraded.push([reel, row]);
+      toSymbols.push(next);
+      if (done) done[key] = true;
+    });
+    if (!upgraded.length) return null;
+    return { type: 'symbol_upgrade', positions: upgraded, count: upgraded.length, to: toSymbols };
+  }
+
   // 同步轴：与 Python 端 sync_reels 同构（先抽同步轴数，再抽起始轴）
   function syncReels(grid, sr, rng, phase) {
     if (!sr || !sr.enabled) return null;
@@ -975,6 +1003,7 @@
     var strips = this.currentStrips(st);
     var cascade = cfg.features.cascade;
     var guard = 0;
+    var upgradedCells = {}; // 本局已升级过的格子（once_per_cell 的边界）
     while (true) {
       var multiplier = st.fsMultiplier * st.cascadeMultiplier;
       var wins = evaluateGrid(cfg, grid, ctx, multiplier);
@@ -1030,8 +1059,27 @@
       guard++;
       if (guard >= MAX_CASCADES_PER_SPIN) break;
       st.cascadeMultiplier = Math.min(cascade.multiplier_cap, st.cascadeMultiplier + cascade.multiplier_step);
-      grid = cascadeCollapse(grid, strips, positions, this.rng);
-      stops = grid.map(function () { return -1; });
+
+      // 符号升级：命中的符号升一档并保留在屏上，其余格才消除补位
+      var remaining = positions.slice();
+      var su = cfg.features.symbol_upgrade;
+      if (su && su.enabled && (su.phases || ['base', 'free_spins']).indexOf(st.phase) >= 0) {
+        var upgraded = applySymbolUpgrade(grid, su, positions, st.phase, upgradedCells);
+        if (upgraded) {
+          steps[steps.length - 1].events.push(upgraded);
+          var keep = {};
+          upgraded.positions.forEach(function (p) {
+            keep[p[0] + ',' + p[1]] = true;
+          });
+          remaining = positions.filter(function (p) {
+            return !keep[p[0] + ',' + p[1]];
+          });
+        }
+      }
+      if (remaining.length) {
+        grid = cascadeCollapse(grid, strips, remaining, this.rng);
+        stops = grid.map(function () { return -1; });
+      }
     }
   };
 

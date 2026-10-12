@@ -99,6 +99,7 @@
         "mystery",
         "pick_bonus",
         "random_wild",
+        "symbol_upgrade",
         "sync_reels",
         "walking_wild"
       ]
@@ -194,6 +195,7 @@
         "mystery",
         "pick_bonus",
         "random_wild",
+        "symbol_upgrade",
         "sync_reels",
         "walking_wild"
       ]
@@ -280,6 +282,7 @@
         "mystery",
         "pick_bonus",
         "random_wild",
+        "symbol_upgrade",
         "sync_reels",
         "walking_wild"
       ]
@@ -403,6 +406,7 @@
         "mystery",
         "pick_bonus",
         "random_wild",
+        "symbol_upgrade",
         "sync_reels",
         "walking_wild"
       ]
@@ -498,6 +502,103 @@
         "mystery",
         "pick_bonus",
         "random_wild",
+        "symbol_upgrade",
+        "sync_reels",
+        "walking_wild"
+      ]
+    },
+    {
+      "id": "jungle_evolve",
+      "name": "丛林进化",
+      "reels": 5,
+      "rows": 3,
+      "pay_mode": "lines",
+      "theme": {
+        "id": "jungle",
+        "name": "丛林进化",
+        "palette": {
+          "grid": "#193d24",
+          "reel": "#1f4a2c",
+          "win": "#ffd45c",
+          "wild": "#f0f8ff",
+          "bonus": "#c6a4ff"
+        },
+        "cabinet_color": "#123021",
+        "background": "#07160d",
+        "accent": "#7cf6c8",
+        "music": ""
+      },
+      "symbols": [
+        {
+          "id": "seed",
+          "name": "种子",
+          "kind": "standard",
+          "color": "#b08968",
+          "glyph": "🌱"
+        },
+        {
+          "id": "sprout",
+          "name": "嫩芽",
+          "kind": "standard",
+          "color": "#7cf6c8",
+          "glyph": "🌿"
+        },
+        {
+          "id": "vine",
+          "name": "藤蔓",
+          "kind": "standard",
+          "color": "#4caf50",
+          "glyph": "🍃"
+        },
+        {
+          "id": "bloom",
+          "name": "花朵",
+          "kind": "standard",
+          "color": "#ff9ec4",
+          "glyph": "🌸"
+        },
+        {
+          "id": "beast",
+          "name": "猛兽",
+          "kind": "standard",
+          "color": "#ffd45c",
+          "glyph": "🐆"
+        },
+        {
+          "id": "king",
+          "name": "兽王",
+          "kind": "standard",
+          "color": "#ff8c42",
+          "glyph": "👑"
+        },
+        {
+          "id": "wild",
+          "name": "图腾 Wild",
+          "kind": "wild",
+          "color": "#f0f8ff",
+          "glyph": "🗿"
+        },
+        {
+          "id": "scatter",
+          "name": "遗迹 Scatter",
+          "kind": "scatter",
+          "color": "#c6a4ff",
+          "glyph": "🏛️"
+        }
+      ],
+      "features": [
+        "cascade",
+        "collect",
+        "colossal",
+        "expanding_wild",
+        "free_spins",
+        "gamble",
+        "hold_win",
+        "multiplier_wild",
+        "mystery",
+        "pick_bonus",
+        "random_wild",
+        "symbol_upgrade",
         "sync_reels",
         "walking_wild"
       ]
@@ -584,6 +685,7 @@
         "mystery",
         "pick_bonus",
         "random_wild",
+        "symbol_upgrade",
         "sync_reels",
         "walking_wild"
       ]
@@ -679,6 +781,7 @@
         "mystery",
         "pick_bonus",
         "random_wild",
+        "symbol_upgrade",
         "sync_reels",
         "walking_wild"
       ]
@@ -786,6 +889,7 @@
         "mystery",
         "pick_bonus",
         "random_wild",
+        "symbol_upgrade",
         "sync_reels",
         "walking_wild"
       ]
@@ -888,6 +992,7 @@
         "mystery",
         "pick_bonus",
         "random_wild",
+        "symbol_upgrade",
         "sync_reels",
         "walking_wild"
       ]
@@ -981,6 +1086,7 @@
         "mystery",
         "pick_bonus",
         "random_wild",
+        "symbol_upgrade",
         "sync_reels",
         "walking_wild"
       ]
@@ -1090,6 +1196,7 @@
         "mystery",
         "pick_bonus",
         "random_wild",
+        "symbol_upgrade",
         "sync_reels",
         "walking_wild"
       ]

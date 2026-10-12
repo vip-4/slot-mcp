@@ -15,6 +15,8 @@
 | fortune_koi | og | Dmitry Kharitonov | https://www.pexels.com/photo/group-of-koi-fish-in-a-pond-20099418/ | Pexels License（可免费商用，无需署名但建议署名） |
 | frost_wolf | hero | Leon Aschemann | https://www.pexels.com/photo/playful-wolves-interacting-in-snowy-forest-36275003/ | Pexels License（可免费商用，无需署名但建议署名） |
 | frost_wolf | og | Leon Aschemann | https://www.pexels.com/photo/playful-wolves-interacting-in-snowy-forest-36275003/ | Pexels License（可免费商用，无需署名但建议署名） |
+| jungle_evolve | hero | fei wang | https://www.pexels.com/photo/tropical-plants-lush-15737814/ | Pexels License（可免费商用，无需署名但建议署名） |
+| jungle_evolve | og | fei wang | https://www.pexels.com/photo/tropical-plants-lush-15737814/ | Pexels License（可免费商用，无需署名但建议署名） |
 | lucky_fruits | hero | Pavel Danilyuk | https://www.pexels.com/photo/men-sitting-in-front-of-a-slot-machine-7594264/ | Pexels License（可免费商用，无需署名但建议署名） |
 | lucky_fruits | og | Pavel Danilyuk | https://www.pexels.com/photo/men-sitting-in-front-of-a-slot-machine-7594264/ | Pexels License（可免费商用，无需署名但建议署名） |
 | neon_twins | hero | kaio ryan | https://www.pexels.com/photo/lights-in-darkness-in-alley-in-town-17195067/ | Pexels License（可免费商用，无需署名但建议署名） |

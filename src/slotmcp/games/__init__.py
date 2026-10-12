@@ -1,4 +1,4 @@
-"""内置 11 款 SLOT 机台。
+"""内置 12 款 SLOT 机台。
 
 新增机台只需两步：
 1. 在本包下新建 `<game_id>.py`，实现 `build_config() -> GameConfig`（可导出 `CONFIG`）；
@@ -19,6 +19,7 @@ from . import (
     dragon_palace,
     fortune_koi,
     frost_wolf,
+    jungle_evolve,
     lucky_fruits,
     neon_twins,
     pharaoh_tomb,
@@ -38,6 +39,7 @@ __all__ = [
     "dragon_palace",
     "fortune_koi",
     "frost_wolf",
+    "jungle_evolve",
     "lucky_fruits",
     "neon_twins",
     "pharaoh_tomb",
@@ -58,6 +60,7 @@ _BUILDERS: Dict[str, Callable[[], GameConfig]] = {
     phoenix_rebirth.GAME_ID: phoenix_rebirth.build_config,
     frost_wolf.GAME_ID: frost_wolf.build_config,
     neon_twins.GAME_ID: neon_twins.build_config,
+    jungle_evolve.GAME_ID: jungle_evolve.build_config,
 }
 
 

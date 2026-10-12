@@ -135,6 +135,31 @@
       }
     },
     {
+      "game": "jungle_evolve",
+      "alt": "丛林进化机台主题图：热带雨林与藤蔓",
+      "provider": "pexels",
+      "page_url": "https://www.pexels.com/photo/tropical-plants-lush-15737814/",
+      "author": "fei wang",
+      "author_url": "https://www.pexels.com/@feiwang",
+      "license": "Pexels License（可免费商用，无需署名但建议署名）",
+      "files": {
+        "hero": {
+          "path": "jungle_evolve-hero.jpg",
+          "width": 960,
+          "height": 540,
+          "bytes": 130855,
+          "source": "https://images.pexels.com/photos/15737814/pexels-photo-15737814.jpeg?auto=compress&cs=tinysrgb&fit=crop&w=960&h=540"
+        },
+        "og": {
+          "path": "jungle_evolve-og.jpg",
+          "width": 1200,
+          "height": 630,
+          "bytes": 185198,
+          "source": "https://images.pexels.com/photos/15737814/pexels-photo-15737814.jpeg?auto=compress&cs=tinysrgb&fit=crop&w=1200&h=630"
+        }
+      }
+    },
+    {
       "game": "lucky_fruits",
       "alt": "幸运水果机台主题图：鲜艳的樱桃与水果特写",
       "provider": "pexels",

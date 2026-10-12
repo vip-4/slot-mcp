@@ -60,7 +60,7 @@ def main() -> int:
 
         print("[ui] 健康检查")
         status, health = api("/api/health")
-        check(status == 200 and len(health["games"]) == 11, "健康检查返回 11 台机台")
+        check(status == 200 and len(health["games"]) == 12, "健康检查返回 12 台机台")
 
         print("[ui] 机台信息")
         status, info = api("/api/games/candy_carnival")

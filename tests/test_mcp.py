@@ -42,7 +42,7 @@ def main() -> int:
     print("[mcp] 工具调用")
     listed = handle_tool("slot_list_games", {})
     check(not listed["isError"], "slot_list_games 成功")
-    check(len(listed["data"]["games"]) == 11, "返回 11 台机台")
+    check(len(listed["data"]["games"]) == 12, "返回 12 台机台")
 
     spun = handle_tool("slot_spin", {"game_id": "candy_carnival", "bet": 2.0, "spins": 3})
     check(not spun["isError"], "slot_spin 成功")

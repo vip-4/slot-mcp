@@ -1,6 +1,6 @@
 # SLOT 游戏合集 —— 开发任务说明（完善版）
 
-> 目标：在现有 **Blender MCP** 框架中，把「老虎机能力」扩展为一个 **11 款 SLOT 游戏合集**，
+> 目标：在现有 **Blender MCP** 框架中，把「老虎机能力」扩展为一个 **12 款 SLOT 游戏合集**，
 > 并且让多主题机台**共用同一套 CONFIG 引擎**。本文档在原需求基础上补充了功能范围、
 > 非功能约束、实现方向、依赖说明、集成步骤与验收标准，可直接作为开发任务拆解的依据。
 
@@ -18,8 +18,8 @@
 
 本轮已完成的新增项：**第 6 台「锦鲤纳福 `fortune_koi`」、第 7 台「雷霆神殿 `thunder_temple`」、
 第 8 台「巨神遗迹 `colossal_ruins`」、第 9 台「凤凰涅槃 `phoenix_rebirth`」
-与第 10 台「冰原狼踪 `frost_wolf`」、第 11 台「霓虹双子 `neon_twins`」**，并借它们把八个热门机制
-（随机 Wild 投放、Cash Collect、倍率 Wild、Pick'em 选宝、巨符号、神秘符号、行走 Wild、同步轴）
+与第 11 台「霓虹双子 `neon_twins`」、第 12 台「丛林进化 `jungle_evolve`」**，并借它们把九个热门机制
+（随机 Wild 投放、Cash Collect、倍率 Wild、Pick'em 选宝、巨符号、神秘符号、行走 Wild、同步轴、符号升级）
 沉淀为**通用配置算子**，供后续机台直接复用。
 
 ---
@@ -30,7 +30,7 @@
 
 | 编号 | 目标 | 验收方式 |
 | --- | --- | --- |
-| G1 | 11 款主题各异的 SLOT 机台 | `slot_list_games` 返回 11 台：`lucky_fruits / candy_carnival / dragon_palace / pharaoh_tomb / star_expedition / fortune_koi / thunder_temple / colossal_ruins / phoenix_rebirth / frost_wolf / neon_twins` |
+| G1 | 12 款主题各异的 SLOT 机台 | `slot_list_games` 返回 12 台：`lucky_fruits / candy_carnival / dragon_palace / pharaoh_tomb / star_expedition / fortune_koi / thunder_temple / colossal_ruins / phoenix_rebirth / frost_wolf / neon_twins` |
 | G2 | 机台之间复用一套 CONFIG 引擎 | 引擎目录内不存在任何按 `game_id` 的分支；新增机台只加配置文件 |
 | G3 | 覆盖主流机制：固定线 / Ways / 级联 / 扩展 Wild / 粘性 Wild / 免费旋转 / Hold&Win / 博彩 / **随机 Wild** / **Cash Collect** / **倍率 Wild** / **Pick'em 选宝** | 每台至少启用一种特性；机制分布见 `docs/GAMES.md` 的覆盖矩阵 |
 | G4 | 统一入口 + 可配置参数 | `SlotMachine.spin()` 唯一入口；`config.set_parameter()` 支持点号路径热更新 |
@@ -38,7 +38,7 @@
 | G6 | 通过 MCP 服务暴露全部能力 | 15 个工具可调用，错误收敛不中断会话 |
 | G7 | 与 Blender 端通信稳定 | 桥接具备封帧、超时、心跳、自动重连；Blender 未启动时降级而非崩溃 |
 | G8 | Web 前端 + 静态站两种形态 | 一套界面玩全部机台；`static/` 可零后端静态托管（已上线 GitHub Pages） |
-| G9 | 新机制可复用 | 随机 Wild / Cash Collect / 倍率 Wild / Pick'em / 巨符号 / 神秘符号 / 行走 Wild / 同步轴均为配置算子，任一新机台开启即可，无需改引擎 |
+| G9 | 新机制可复用 | 随机 Wild / Cash Collect / 倍率 Wild / Pick'em / 巨符号 / 神秘符号 / 行走 Wild / 同步轴 / 符号升级均为配置算子，任一新机台开启即可，无需改引擎 |
 
 ### 1.2 非目标（Out of Scope）
 
@@ -65,7 +65,7 @@
 | `session.py` | 钱包、下注档位、博彩 | 与实际对局共用同一 `spin()`，RTP 口径一致 |
 | `simulator.py` | RTP / 波动率 / 命中率 / 特性频率仿真 | 复用线上代码路径，避免「仿真与实测两套数学」 |
 
-### 2.2 十一款机台（配置层）
+### 2.2 十二款机台（配置层）
 
 | 机台 | 结构 | 特殊符号 | 奖励触发 | 实测 RTP / 波动 |
 | --- | --- | --- | --- | --- |
@@ -80,6 +80,7 @@
 | **凤凰涅槃 `phoenix_rebirth`** | 5x3 · 20 线 | 火羽 / 赤玉 / 青铜镜 / Wild；🥚 凤凰蛋（**bonus 占位**）；神木 Scatter | **神秘符号揭示**（蛋统一揭示为同一符号，含 Wild）+ 免费旋转（8/12/16，倍率 1/2/3） | **96.92% / 中高** |
 | **冰原狼踪 `frost_wolf`** | 5x4 · 50 线 | 战斧 / 盾牌 / 号角 / 长船 / 卢恩石 / 雪晶；🐺 冰狼 Wild（**会行走**）；🌌 极光 Scatter | **行走 Wild**（免费旋转里每局左移一列，跨局状态）+ 免费旋转（8/12/16，倍率 1/2/3） | **96.44% / 高** |
 | **霓虹双子 `neon_twins`** | 5x3 · 20 线 | 霓虹心 / 唱片 / 耳机 / 吉他 / 骰子 / 星标；🔷 棱镜 Wild；🚪 双子门 Scatter | **同步轴**（2~5 个相邻轴显示完全相同符号）+ 免费旋转（8/12/16，倍率 1/2/3） | **96.32% / 中高** |
+| **丛林进化 `jungle_evolve`** | 5x3 · 20 线 | 🌱种子→🌿嫩芽→🍃藤蔓→🌸花朵→🐆猛兽→👑兽王（**进化阶梯**）；🗿 图腾 Wild；🏛️ 遗迹 Scatter | **符号升级**（命中后升一档并保留在屏上，每格每局一次）+ 级联（倍率 1~5）+ 免费旋转（8/12/16，倍率 1/2/3） | **96.24% / 中高** |
 
 ### 2.3 新增机台的机制定义（可作为后续机台模板）
 
@@ -150,16 +151,17 @@
 slot-mcp/
 ├── src/slotmcp/
 │   ├── engine/                 # 共用 CONFIG 引擎（9 个模块，无机台分支）
-│   │   ├── config.py           #   含 RandomWildConfig / CollectConfig / MultiplierWildConfig / PickBonusConfig / ColossalSymbolConfig / MysterySymbolConfig
-│   │   ├── features.py         #   place_random_wilds / collect_coins / place_colossal_symbol / reveal_mystery_symbols / walk_wilds
+│   │   ├── config.py           #   含 RandomWildConfig / CollectConfig / MultiplierWildConfig / PickBonusConfig / ColossalSymbolConfig / MysterySymbolConfig / WalkingWildConfig / SyncReelsConfig / SymbolUpgradeConfig
+│   │   ├── features.py         #   place_random_wilds / collect_coins / place_colossal_symbol / reveal_mystery_symbols / walk_wilds / sync_reels / apply_symbol_upgrade
 │   │   └── game.py             #   统一入口 spin()
-│   ├── games/                  # 11 款机台配置 + 注册表
+│   ├── games/                  # 12 款机台配置 + 注册表
 │   │   ├── fortune_koi.py      #   第 6 台：随机 Wild + Cash Collect + 免费旋转
 │   │   ├── thunder_temple.py   #   第 7 台：倍率 Wild + Pick'em 选宝 + 免费旋转
 │   │   ├── colossal_ruins.py   #   第 8 台：巨符号 2×2/3×3 + 免费旋转
 │   │   ├── phoenix_rebirth.py  #   第 9 台：神秘符号揭示 + 免费旋转
 │   │   ├── frost_wolf.py       #   第 10 台：行走 Wild（跨局状态）+ 免费旋转
-│   │   └── neon_twins.py       #   第 11 台：同步轴（Twin Reels）+ 免费旋转
+│   │   ├── neon_twins.py       #   第 11 台：同步轴（Twin Reels）+ 免费旋转
+│   │   └── jungle_evolve.py    #   第 12 台：符号升级（进化链）+ 级联 + 免费旋转
 │   ├── mcp/                    # stdio 服务端 / 15 个工具 / Blender 桥接
 │   ├── ui/http_api.py          # REST + 静态托管（动态形态）
 │   ├── services/               # 外部服务客户端（邮件/定时/三维/图片/GEO/数据库/发布）
@@ -259,7 +261,7 @@ slot-mcp/
 | M4 | 补齐至 5 台并完成 RTP 调参 | 5 台均在容差内 |
 | M5 | MCP 服务层 + Blender 桥接 + Web 前端 | 15 个工具、插件、界面可用 |
 | M6 | 静态站形态 + SEO/GEO + 发布与运维 | `static/` 上线 GitHub Pages，巡检/邮件/审计打通 |
-| M7 | **第 6/7/8/9/10/11 台 + 新机制通用化** | `RandomWildConfig` / `CollectConfig` / `MultiplierWildConfig` / `PickBonusConfig` / `ColossalSymbolConfig` / `MysterySymbolConfig` / `WalkingWildConfig` / `SyncReelsConfig` 沉淀为算子；六台新机台过 20 万局校验；前后端一致 |
+| M7 | **第 6/7/8/9/10/11/12 台 + 新机制通用化** | `RandomWildConfig` / `CollectConfig` / `MultiplierWildConfig` / `PickBonusConfig` / `ColossalSymbolConfig` / `MysterySymbolConfig` / `WalkingWildConfig` / `SyncReelsConfig` / `SymbolUpgradeConfig` 沉淀为算子；七台新机台过 20 万局校验；前后端一致 |
 
 ---
 

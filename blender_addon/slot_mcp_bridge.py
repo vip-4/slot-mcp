@@ -365,7 +365,16 @@ def op_animate_spin(params: Dict[str, Any]) -> Dict[str, Any]:
 
 
 # 事件类型 -> 高亮用途（只挑有明确落点的事件，其余保持原样）
-_EVENT_KINDS = ("random_wild", "collect", "expanding_wild", "hold_win", "walking_wild", "colossal", "sync_reels")
+_EVENT_KINDS = (
+    "random_wild",
+    "collect",
+    "expanding_wild",
+    "hold_win",
+    "walking_wild",
+    "colossal",
+    "sync_reels",
+    "symbol_upgrade",
+)
 
 
 def _apply_highlights(

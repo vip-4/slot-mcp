@@ -71,7 +71,7 @@ def load_config() -> Dict[str, Any]:
         "playcanvas_project": 1583126,
         "playcanvas_scene": "Main Scene",
         "metaso_key": "",
-        "metaso_query": "11 款免费在线老虎机 SLOT 合集 静态站",
+        "metaso_query": "12 款免费在线老虎机 SLOT 合集 静态站",
         "carto_key": "",
         "carto_host": "https://gcp-us-east1.api.carto.com",
         "weather_key": "",

@@ -85,6 +85,11 @@ THEME_QUERIES: Dict[str, Dict[str, str]] = {
         "pixabay": "neon city night",
         "alt": "霓虹双子机台主题图：赛博霓虹街景",
     },
+    "jungle_evolve": {
+        "pexels": "jungle rainforest green leaves",
+        "pixabay": "jungle rainforest leaves",
+        "alt": "丛林进化机台主题图：热带雨林与藤蔓",
+    },
 }
 
 HERO_SIZE = (960, 540)

@@ -338,6 +338,9 @@
         else if (e.type === 'colossal') {
           const cs = cfg.symbols[e.symbol] || { name: e.symbol };
           say(`巨符号降临：${e.size}×${e.size} 的${cs.name}落在第 ${e.reel + 1} 轴`);
+        } else if (e.type === 'symbol_upgrade') {
+          const names = [...new Set(e.to.map((s) => (cfg.symbols[s] || { name: s }).name))];
+          say(`进化：${e.count} 个符号升级为${names.join(' / ')}`);
         } else if (e.type === 'sync_reels') {
           say(`第 ${e.reels.map((r) => r + 1).join('/')} 轴同步：显示完全相同的符号`);
         } else if (e.type === 'walking_wild') {

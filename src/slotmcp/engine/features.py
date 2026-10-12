@@ -25,7 +25,56 @@ __all__ = [
     "reveal_mystery_symbols",
     "walk_wilds",
     "sync_reels",
+    "apply_symbol_upgrade",
 ]
+
+
+def apply_symbol_upgrade(
+    grid: Grid,
+    su: Any,
+    positions: Sequence[Position],
+    phase: str = "base",
+    done: Optional[set] = None,
+) -> Optional[Dict[str, Any]]:
+    """符号升级：把参与命中的符号沿阶梯升一档（**不消耗随机数**）。
+
+    升级后的符号保留在屏上（调用方据此把它们从「待消除」列表里剔除），
+    下一轮级联以更高赔付继续结算。返回 `None` 表示没有可升级的格子。
+
+    `done` 为「本局已升级过的格子」集合：`once_per_cell=True` 时每格只升级一次。
+    **这是必须的边界**——升级后的符号留在屏上，若允许反复升级，同一格会被无限次
+    升级并反复派奖（实测 RTP 会冲到 9582%）。
+    """
+    if not su or not su.enabled:
+        return None
+    if phase not in (su.phases or ["base", "free_spins"]):
+        return None
+
+    upgraded: List[List[int]] = []
+    to_symbols: List[str] = []
+    for pos in positions:
+        reel, row = int(pos[0]), int(pos[1])
+        if not (0 <= reel < len(grid)) or not (0 <= row < len(grid[reel])):
+            continue
+        if su.once_per_cell and done is not None and (reel, row) in done:
+            continue
+        current = grid[reel][row]
+        nxt = su.next_of(current)
+        if not nxt or nxt == current:
+            continue
+        grid[reel][row] = nxt
+        upgraded.append([reel, row])
+        to_symbols.append(nxt)
+        if done is not None:
+            done.add((reel, row))
+    if not upgraded:
+        return None
+    return {
+        "type": "symbol_upgrade",
+        "positions": upgraded,
+        "count": len(upgraded),
+        "to": to_symbols,
+    }
 
 
 def sync_reels(

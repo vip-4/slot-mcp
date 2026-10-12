@@ -699,6 +699,51 @@ class SyncReelsConfig:
 
 
 @dataclass
+class SymbolUpgradeConfig:
+    """符号升级（Symbol Upgrade）：参与命中的符号沿阶梯升一档，**并保留在屏上**。
+
+    与级联配合形成「滚雪球」：命中的低档符号升级为高档符号后不参与消除，
+    下一轮级联以更高赔付继续结算，直到升到阶梯顶端才被消除补位。
+
+    * `ladder`：符号 -> 升级目标（目标必须是已定义的标准符号）
+    * `phases`：生效阶段
+    * `require_cascade`：True 时若机台未启用级联则校验报错（升级依赖级联才有意义）
+    * `once_per_cell`：**每格每局最多升级一次**。这是必须的边界——升级后的符号保留在屏上，
+      若不限制次数，同一格会被无限次升级并反复派奖（实测会把 RTP 推到 9582%）
+
+    **不消耗随机数**：升级是确定性的，前后端只要阶梯一致就必然同构。
+    """
+
+    enabled: bool = False
+    ladder: Dict[str, str] = field(default_factory=dict)
+    phases: List[str] = field(default_factory=lambda: ["base", "free_spins"])
+    require_cascade: bool = True
+    once_per_cell: bool = True
+
+    def next_of(self, symbol_id: str) -> str:
+        return self.ladder.get(symbol_id, "")
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "enabled": self.enabled,
+            "ladder": dict(self.ladder),
+            "phases": list(self.phases),
+            "require_cascade": self.require_cascade,
+            "once_per_cell": self.once_per_cell,
+        }
+
+    @staticmethod
+    def from_dict(d: Dict[str, Any]) -> "SymbolUpgradeConfig":
+        return SymbolUpgradeConfig(
+            enabled=bool(d.get("enabled", False)),
+            ladder={k: v for k, v in (d.get("ladder") or {}).items()},
+            phases=list(d.get("phases") or ["base", "free_spins"]),
+            require_cascade=bool(d.get("require_cascade", True)),
+            once_per_cell=bool(d.get("once_per_cell", True)),
+        )
+
+
+@dataclass
 class GambleConfig:
     enabled: bool = False
     max_steps: int = 5
@@ -740,6 +785,7 @@ class Features:
     mystery: Optional[MysterySymbolConfig] = None
     walking_wild: Optional[WalkingWildConfig] = None
     sync_reels: Optional[SyncReelsConfig] = None
+    symbol_upgrade: Optional[SymbolUpgradeConfig] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -756,6 +802,7 @@ class Features:
             "mystery": self.mystery.to_dict() if self.mystery else None,
             "walking_wild": self.walking_wild.to_dict() if self.walking_wild else None,
             "sync_reels": self.sync_reels.to_dict() if self.sync_reels else None,
+            "symbol_upgrade": self.symbol_upgrade.to_dict() if self.symbol_upgrade else None,
         }
 
     @staticmethod
@@ -778,6 +825,9 @@ class Features:
             mystery=MysterySymbolConfig.from_dict(d["mystery"]) if d.get("mystery") else None,
             walking_wild=WalkingWildConfig.from_dict(d["walking_wild"]) if d.get("walking_wild") else None,
             sync_reels=SyncReelsConfig.from_dict(d["sync_reels"]) if d.get("sync_reels") else None,
+            symbol_upgrade=SymbolUpgradeConfig.from_dict(d["symbol_upgrade"])
+            if d.get("symbol_upgrade")
+            else None,
         )
 
 
@@ -1225,6 +1275,36 @@ class GameConfig:
             for phase in sr.phases or []:
                 if phase not in ("base", "free_spins", "hold_win"):
                     errors.append(f"sync_reels.phases 非法: {phase}")
+
+        su = self.features.symbol_upgrade
+        if su and su.enabled:
+            if not su.ladder:
+                errors.append("symbol_upgrade.ladder 不能为空")
+            for src, dst in su.ladder.items():
+                if src not in self.symbols:
+                    errors.append(f"symbol_upgrade 引用未定义符号: {src}")
+                if dst not in self.symbols:
+                    errors.append(f"symbol_upgrade 升级目标未定义: {dst}")
+                else:
+                    kind = self.symbols[dst].kind
+                    if kind is not SymbolKind.STANDARD:
+                        errors.append(f"symbol_upgrade 只能升级为标准符号: {dst}")
+                if src == dst:
+                    errors.append(f"symbol_upgrade 自引用: {src}")
+            # 阶梯不能成环：从任一符号出发最多走 len(ladder) 步
+            for start in su.ladder:
+                cur = start
+                seen = set()
+                while cur in su.ladder and cur not in seen:
+                    seen.add(cur)
+                    cur = su.ladder[cur]
+                if cur in su.ladder:
+                    errors.append(f"symbol_upgrade 阶梯存在环: {start} -> ... -> {cur}")
+            if su.require_cascade and not (self.features.cascade and self.features.cascade.enabled):
+                errors.append("symbol_upgrade 依赖级联：请同时启用 features.cascade")
+            for phase in su.phases or []:
+                if phase not in ("base", "free_spins", "hold_win"):
+                    errors.append(f"symbol_upgrade.phases 非法: {phase}")
 
         ew = self.features.expanding_wild
         if ew:

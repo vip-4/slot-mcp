@@ -24,6 +24,7 @@ from .features import (
     place_colossal_symbol,
     place_random_wilds,
     resolve_pick_bonus,
+    apply_symbol_upgrade,
     reveal_mystery_symbols,
     sync_reels,
     walk_wilds,
@@ -544,6 +545,7 @@ class SlotMachine:
         strip_set = self._current_strip_set(st)
         cascade = cfg.features.cascade
         guard = 0
+        upgraded_cells: set = set()  # 本局已升级过的格子（once_per_cell 的边界）
 
         while True:
             multiplier = st.fs_multiplier * st.cascade_multiplier
@@ -608,8 +610,19 @@ class SlotMachine:
             st.cascade_multiplier = min(
                 cascade.multiplier_cap, st.cascade_multiplier + cascade.multiplier_step
             )
-            grid = cascade_collapse(grid, strip_set, positions, self.rng)
-            stops = [-1] * len(grid)
+
+            # 符号升级：命中的符号升一档并保留在屏上，其余格才消除补位
+            remaining = list(positions)
+            su = cfg.features.symbol_upgrade
+            if su and su.enabled and st.phase in (su.phases or [PHASE_BASE, PHASE_FREE]):
+                upgraded = apply_symbol_upgrade(grid, su, positions, st.phase, upgraded_cells)
+                if upgraded:
+                    steps[-1].events.append(upgraded)
+                    keep = {tuple(p) for p in upgraded["positions"]}
+                    remaining = [p for p in positions if tuple(p) not in keep]
+            if remaining:
+                grid = cascade_collapse(grid, strip_set, remaining, self.rng)
+                stops = [-1] * len(grid)
 
     # ------------------------------------------------------------------ 触发器
     def _apply_triggers(

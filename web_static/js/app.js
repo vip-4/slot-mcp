@@ -335,6 +335,10 @@
         else if (e.type === 'random_wild') say(`锦鲤跃入水面：随机投放 ${e.count} 个 Wild`);
         else if (e.type === 'collect') say(`锦鲤纳福：收集 ${e.coins} 枚金币，+${e.amount}`);
         else if (e.type === 'pick_bonus') say(`选宝奖励：${e.picks.length} 次挑选（${e.picks.join(' / ')}），+${e.award}`);
+        else if (e.type === 'colossal') {
+          const cs = cfg.symbols[e.symbol] || { name: e.symbol };
+          say(`巨符号降临：${e.size}×${e.size} 的${cs.name}落在第 ${e.reel + 1} 轴`);
+        }
       });
       if (!reduceMotion) await sleep(step.phase === 'hold_win' ? 620 : i === 0 ? 420 : 340);
       if (step.stepWin > 0) el('round-win').textContent = total.toFixed(2);

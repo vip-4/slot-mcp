@@ -7,6 +7,8 @@
 | --- | --- | --- | --- | --- |
 | candy_carnival | hero | Levent Yucelman | https://www.pexels.com/photo/colorful-candies-on-a-table-16365469/ | Pexels License（可免费商用，无需署名但建议署名） |
 | candy_carnival | og | Levent Yucelman | https://www.pexels.com/photo/colorful-candies-on-a-table-16365469/ | Pexels License（可免费商用，无需署名但建议署名） |
+| colossal_ruins | hero | Serg Alesenko | https://www.pexels.com/photo/statues-in-front-of-an-ancient-temple-in-cambodia-15890716/ | Pexels License（可免费商用，无需署名但建议署名） |
+| colossal_ruins | og | Serg Alesenko | https://www.pexels.com/photo/statues-in-front-of-an-ancient-temple-in-cambodia-15890716/ | Pexels License（可免费商用，无需署名但建议署名） |
 | dragon_palace | hero | 柳树 无 | https://www.pexels.com/photo/traditional-chinese-temple-in-quanzhou-fujian-38109113/ | Pexels License（可免费商用，无需署名但建议署名） |
 | dragon_palace | og | 柳树 无 | https://www.pexels.com/photo/traditional-chinese-temple-in-quanzhou-fujian-38109113/ | Pexels License（可免费商用，无需署名但建议署名） |
 | fortune_koi | hero | Dmitry Kharitonov | https://www.pexels.com/photo/group-of-koi-fish-in-a-pond-20099418/ | Pexels License（可免费商用，无需署名但建议署名） |

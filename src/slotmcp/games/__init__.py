@@ -15,6 +15,7 @@ from ..engine.config import GameConfig
 
 from . import (
     candy_carnival,
+    colossal_ruins,
     dragon_palace,
     fortune_koi,
     lucky_fruits,
@@ -30,6 +31,7 @@ __all__ = [
     "game_ids",
     "export_config_json",
     "candy_carnival",
+    "colossal_ruins",
     "dragon_palace",
     "fortune_koi",
     "lucky_fruits",
@@ -46,6 +48,7 @@ _BUILDERS: Dict[str, Callable[[], GameConfig]] = {
     star_expedition.GAME_ID: star_expedition.build_config,
     fortune_koi.GAME_ID: fortune_koi.build_config,
     thunder_temple.GAME_ID: thunder_temple.build_config,
+    colossal_ruins.GAME_ID: colossal_ruins.build_config,
 }
 
 

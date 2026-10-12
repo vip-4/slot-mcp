@@ -90,6 +90,99 @@
       "features": [
         "cascade",
         "collect",
+        "colossal",
+        "expanding_wild",
+        "free_spins",
+        "gamble",
+        "hold_win",
+        "multiplier_wild",
+        "pick_bonus",
+        "random_wild"
+      ]
+    },
+    {
+      "id": "colossal_ruins",
+      "name": "巨神遗迹",
+      "reels": 5,
+      "rows": 3,
+      "pay_mode": "lines",
+      "theme": {
+        "id": "ruins",
+        "name": "巨神遗迹",
+        "palette": {
+          "grid": "#241a10",
+          "reel": "#33261a",
+          "win": "#ffd45c",
+          "wild": "#ffe9a8",
+          "bonus": "#9fe3ff"
+        },
+        "cabinet_color": "#3a2a18",
+        "background": "#14100a",
+        "accent": "#ffd45c",
+        "music": ""
+      },
+      "symbols": [
+        {
+          "id": "idol",
+          "name": "石像",
+          "kind": "standard",
+          "color": "#c9a227",
+          "glyph": "🗿"
+        },
+        {
+          "id": "jaguar",
+          "name": "美洲豹",
+          "kind": "standard",
+          "color": "#e8b04b",
+          "glyph": "🐆"
+        },
+        {
+          "id": "mask",
+          "name": "黄金面具",
+          "kind": "standard",
+          "color": "#ffd45c",
+          "glyph": "🎭"
+        },
+        {
+          "id": "torch",
+          "name": "火把",
+          "kind": "standard",
+          "color": "#ff8c42",
+          "glyph": "🔥"
+        },
+        {
+          "id": "vase",
+          "name": "陶罐",
+          "kind": "standard",
+          "color": "#b08968",
+          "glyph": "🏺"
+        },
+        {
+          "id": "leaf",
+          "name": "藤叶",
+          "kind": "standard",
+          "color": "#7cc47f",
+          "glyph": "🍃"
+        },
+        {
+          "id": "wild",
+          "name": "图腾 Wild",
+          "kind": "wild",
+          "color": "#ffe9a8",
+          "glyph": "🌞"
+        },
+        {
+          "id": "scatter",
+          "name": "遗迹之门 Scatter",
+          "kind": "scatter",
+          "color": "#9fe3ff",
+          "glyph": "🚪"
+        }
+      ],
+      "features": [
+        "cascade",
+        "collect",
+        "colossal",
         "expanding_wild",
         "free_spins",
         "gamble",
@@ -172,6 +265,7 @@
       "features": [
         "cascade",
         "collect",
+        "colossal",
         "expanding_wild",
         "free_spins",
         "gamble",
@@ -291,6 +385,7 @@
       "features": [
         "cascade",
         "collect",
+        "colossal",
         "expanding_wild",
         "free_spins",
         "gamble",
@@ -373,6 +468,7 @@
       "features": [
         "cascade",
         "collect",
+        "colossal",
         "expanding_wild",
         "free_spins",
         "gamble",
@@ -476,6 +572,7 @@
       "features": [
         "cascade",
         "collect",
+        "colossal",
         "expanding_wild",
         "free_spins",
         "gamble",
@@ -565,6 +662,7 @@
       "features": [
         "cascade",
         "collect",
+        "colossal",
         "expanding_wild",
         "free_spins",
         "gamble",
@@ -670,6 +768,7 @@
       "features": [
         "cascade",
         "collect",
+        "colossal",
         "expanding_wild",
         "free_spins",
         "gamble",

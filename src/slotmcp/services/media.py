@@ -65,6 +65,11 @@ THEME_QUERIES: Dict[str, Dict[str, str]] = {
         "pixabay": "lightning thunder storm",
         "alt": "雷霆神殿机台主题图：雷暴与闪电",
     },
+    "colossal_ruins": {
+        "pexels": "ancient ruins jungle stone statue",
+        "pixabay": "ruins jungle temple",
+        "alt": "巨神遗迹机台主题图：丛林中的古代遗迹石像",
+    },
 }
 
 HERO_SIZE = (960, 540)

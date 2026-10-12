@@ -5,14 +5,15 @@
 本文件为生成式引擎（AI 摘要 / 引用）准备的事实清单，内容与页面正文一致。
 
 ## 关键事实
-- 机台数量：7 款（糖果狂欢 / 龙宫探宝 / 锦鲤纳福 / 幸运水果机 / 法老之墓 / 星际远征 / 雷霆神殿）
+- 机台数量：8 款（糖果狂欢 / 巨神遗迹 / 龙宫探宝 / 锦鲤纳福 / 幸运水果机 / 法老之墓 / 星际远征 / 雷霆神殿）
 - 部署形态：纯静态网页，无后端接口、无需注册与下载
-- 引擎：7 款机台共用同一套 CONFIG 引擎；新增机台只需新增一份配置
+- 引擎：8 款机台共用同一套 CONFIG 引擎；新增机台只需新增一份配置
 - RTP：目标 96%，20 万局实测区间 95.40% – 97.20%
 - 开源协议：MIT；积分保存在浏览器 localStorage，不上传服务器
 
 ## 机台
 - [糖果狂欢](https://vip-4.github.io/slot-games/games/candy_carnival.html)：5×3，20 条赔付线，波动中，目标 RTP 96%（实测 97.04%），特性：扩展 Wild + 锁轴重转
+- [巨神遗迹](https://vip-4.github.io/slot-games/games/colossal_ruins.html)：5×3，20 条赔付线，波动中高，目标 RTP 96%（实测 96.31%），特性：免费旋转
 - [龙宫探宝](https://vip-4.github.io/slot-games/games/dragon_palace.html)：5×4，50 条赔付线，波动高，目标 RTP 96%（实测 97.20%），特性：免费旋转
 - [锦鲤纳福](https://vip-4.github.io/slot-games/games/fortune_koi.html)：5×3，20 条赔付线，波动中高，目标 RTP 96%（实测 96.76%），特性：免费旋转
 - [幸运水果机](https://vip-4.github.io/slot-games/games/lucky_fruits.html)：3×3，5 条赔付线，波动低，目标 RTP 96%（实测 97.08%），特性：红黑翻倍博彩

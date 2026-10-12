@@ -3,7 +3,7 @@
 分层结构::
 
     engine/  CONFIG 引擎（与具体机台无关的数学模型）
-    games/   7 款机台的纯配置
+    games/   8 款机台的纯配置
     mcp/     MCP 服务层（stdio JSON-RPC 工具 + Blender 桥接）
     ui/      纯标准库 HTTP 服务，为前端提供 REST API
 

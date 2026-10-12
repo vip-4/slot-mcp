@@ -33,7 +33,7 @@ def check(condition: bool, message: str) -> None:
 def test_configuration() -> None:
     print("[engine] 配置与校验")
     ids = game_ids()
-    check(len(ids) == 7, f"内置 7 款机台: {', '.join(ids)}")
+    check(len(ids) == 8, f"内置 8 款机台: {', '.join(ids)}")
     check("fortune_koi" in ids, "新增机台 fortune_koi 已注册")
     for cfg in iter_game_configs():
         errors = cfg.validate()
@@ -412,6 +412,113 @@ def test_new_feature_config_validation() -> None:
     check(any("award_multiplier" in e for e in errors), "选宝总倍率非正被拦截")
 
 
+def test_colossal_symbols() -> None:
+    print("[engine] 巨符号（Colossal Symbol）")
+    from slotmcp.engine.config import ColossalSymbolConfig
+    from slotmcp.engine.features import place_colossal_symbol
+
+    ruins = get_registry().get("colossal_ruins")
+    cfg = ruins.config
+    cc = cfg.features.colossal
+    check(cc is not None and cc.enabled, "colossal_ruins 启用巨符号")
+
+    # 固定网格 + 固定配置：块必须被完整写入
+    grid = [["leaf", "leaf", "leaf"] for _ in range(5)]
+    cc2 = ColossalSymbolConfig(
+        enabled=True,
+        size_weights={2: 1},
+        symbols={"idol": 1},
+        reels=[1],
+        rows=[0],
+        phases=["base"],
+        protected_symbols=["scatter"],
+    )
+    block = place_colossal_symbol(grid, cfg, cc2, SlotRNG("blk"), "base")
+    check(block is not None and block["size"] == 2, "投放 2×2 块")
+    check(
+        all(grid[r][c] == "idol" for r in (1, 2) for c in (0, 1)),
+        f"块内格子被整体替换：{[row[:2] for row in grid[1:3]]}",
+    )
+    check(block["positions"] == [(1, 0), (1, 1), (2, 0), (2, 1)], f"落点坐标有序：{block['positions']}")
+
+    # 受保护符号：块内出现 Scatter 时放弃投放
+    grid2 = [["leaf", "leaf", "leaf"] for _ in range(5)]
+    grid2[2][1] = "scatter"
+    check(place_colossal_symbol(grid2, cfg, cc2, SlotRNG("blk2"), "base") is None, "撞到受保护符号时放弃投放")
+    check(all("scatter" in col for col in [grid2[2]]) and grid2[1][0] == "leaf", "放弃时不改动网格")
+
+    # 阶段过滤
+    check(place_colossal_symbol([["leaf"] * 3 for _ in range(5)], cfg, cc2, SlotRNG("p"), "free_spins") is None,
+          "未配置的阶段不投放")
+
+    # 尺寸抽样：权重决定 2×2 与 3×3 的比例
+    sizes: Dict[int, int] = {}
+    for i in range(4000):
+        g = [["leaf", "leaf", "leaf"] for _ in range(5)]
+        b = place_colossal_symbol(g, cfg, cfg.features.colossal, SlotRNG(f"sz{i}"), "base")
+        if b:
+            sizes[b["size"]] = sizes.get(b["size"], 0) + 1
+    check(set(sizes) == {2, 3}, f"两种尺寸都会出现：{sizes}")
+    check(sizes.get(2, 0) > sizes.get(3, 0), "2×2 比 3×3 更常见（权重 55 : 20）")
+
+    # 端到端：能触发事件，且块尺寸合法
+    ruins.rng = SlotRNG("ruins")
+    hit = 0
+    for _ in range(2000):
+        for step in ruins.spin(total_bet=1.0).steps:
+            for e in step.events:
+                if e.get("type") == "colossal":
+                    hit += 1
+                    sym = step.grid[e["reel"]][e["row"]]
+                    assert sym == e["symbol"], "块内符号应与事件一致"
+    check(hit > 0, f"端到端可触发巨符号（{hit} 次）")
+
+    # 参数可调：关掉 3×3 后不再出现该尺寸
+    from slotmcp.engine.config import set_parameter as _set
+
+    _set(cfg, "features.colossal.size_weights.3", 0)
+    sizes2: Dict[int, int] = {}
+    for i in range(2000):
+        g = [["leaf", "leaf", "leaf"] for _ in range(5)]
+        b = place_colossal_symbol(g, cfg, cfg.features.colossal, SlotRNG(f"z{i}"), "base")
+        if b:
+            sizes2[b["size"]] = sizes2.get(b["size"], 0) + 1
+    _set(cfg, "features.colossal.size_weights.3", 20)
+    check(3 not in sizes2, f"slot_set_parameter 可关闭 3×3（{sizes2}）")
+
+
+def test_colossal_config_validation() -> None:
+    print("[engine] 巨符号配置校验")
+    from slotmcp.engine.config import ColossalSymbolConfig, Features, GameConfig
+
+    bad = GameConfig(
+        id="bad_colossal",
+        name="bad",
+        reels=5,
+        rows=3,
+        symbols={"wild": _sym("wild", "wild"), "scatter": _sym("scatter", "scatter")},
+        reel_sets={"base": _reel_set(["wild", "scatter", "leaf"])},
+        features=Features(
+            colossal=ColossalSymbolConfig(
+                enabled=True,
+                size_weights={1: 1, 9: 1},
+                symbols={"ghost": 1, "scatter": 1},
+                reels=[7],
+                rows=[9],
+                phases=["nonsense"],
+            )
+        ),
+    )
+    errors = bad.validate()
+    joined = " | ".join(errors)
+    check(any("块尺寸至少为 2" in e or "超过网格范围" in e for e in errors), f"非法块尺寸被拦截：{joined[:160]}")
+    check(any("引用未定义符号" in e for e in errors), "未定义符号被拦截")
+    check(any("只能投放标准符号或 Wild" in e for e in errors), "Scatter 不可被投放被拦截")
+    check(any("reels 超出轴范围" in e for e in errors), "落点轴越界被拦截")
+    check(any("rows 超出排范围" in e for e in errors), "落点排越界被拦截")
+    check(any("phases 非法" in e for e in errors), "非法阶段被拦截")
+
+
 def test_session() -> None:
     print("[engine] 会话与钱包")
     machine = get_registry().get("lucky_fruits")
@@ -489,6 +596,8 @@ def main() -> int:
     test_feature_config_validation()
     test_multiplier_wild_and_pick_bonus()
     test_new_feature_config_validation()
+    test_colossal_symbols()
+    test_colossal_config_validation()
     test_session()
     test_hot_reload()
     test_rtp_regression()

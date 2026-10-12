@@ -196,6 +196,55 @@
     };
   }
 
+  // 巨符号投放：与 Python 端 place_colossal_symbol 同构
+  // 抽样顺序：块尺寸 -> 最左轴 -> 最上排 -> 符号；块内撞到受保护符号则放弃本次投放
+  function placeColossalSymbol(grid, cfg, cc, rng, phase) {
+    if (!cc || !cc.enabled) return null;
+    if ((cc.phases || ['base']).indexOf(phase) < 0) return null;
+    var sizes = Object.keys(cc.size_weights || {}).map(Number).filter(function (s) { return s > 0; }).sort(function (a, b) { return a - b; });
+    if (!sizes.length) return null;
+    var total = 0;
+    sizes.forEach(function (s) { total += Number(cc.size_weights[s]) || 0; });
+    var target = rng.random() * total;
+    var acc = 0;
+    var size = sizes[sizes.length - 1];
+    for (var i = 0; i < sizes.length; i++) {
+      acc += Number(cc.size_weights[sizes[i]]) || 0;
+      if (target < acc) { size = sizes[i]; break; }
+    }
+    if (size <= 1) return null;
+
+    var reels = (cc.reels || []).filter(function (r) { return r >= 0 && r <= grid.length - size; });
+    var rows = (cc.rows || []).filter(function (r) { return r >= 0 && r <= grid[0].length - size; });
+    if (!reels.length || !rows.length) return null;
+    var left = reels[Math.floor(rng.random() * reels.length)];
+    var top = rows[Math.floor(rng.random() * rows.length)];
+
+    var symIds = Object.keys(cc.symbols || {});
+    var symTotal = 0;
+    symIds.forEach(function (s) { symTotal += Number(cc.symbols[s]) || 0; });
+    if (symTotal <= 0) return null;
+    target = rng.random() * symTotal;
+    acc = 0;
+    var symbolId = symIds[symIds.length - 1];
+    for (var j = 0; j < symIds.length; j++) {
+      acc += Number(cc.symbols[symIds[j]]) || 0;
+      if (target < acc) { symbolId = symIds[j]; break; }
+    }
+
+    var protectedSet = {};
+    (cc.protected_symbols || []).forEach(function (s) { protectedSet[s] = true; });
+    var positions = [];
+    for (var r2 = left; r2 < left + size; r2++) {
+      for (var c2 = top; c2 < top + size; c2++) {
+        if (protectedSet[grid[r2][c2]]) return null;
+        positions.push([r2, c2]);
+      }
+    }
+    positions.forEach(function (p) { grid[p[0]][p[1]] = symbolId; });
+    return { type: 'colossal', symbol: symbolId, size: size, reel: left, row: top, positions: positions };
+  }
+
   // 随机 Wild 投放与 Python 端 place_random_wilds 完全同构（含 RNG 消耗顺序）
   function placeRandomWilds(grid, symbolId, count, rng, excludeReels, protectedSymbols) {
     if (count <= 0) return [];
@@ -645,6 +694,13 @@
     var rolled = this.roll(st, strips);
     var grid = rolled.grid;
     var stops = rolled.stops;
+
+    // 巨符号：先于其它网格改写算子投放，保证后续判定看到的是最终网格
+    var cs = cfg.features.colossal;
+    if (cs && cs.enabled) {
+      var block = placeColossalSymbol(grid, cfg, cs, this.rng, st.phase);
+      if (block) stepEvents.push(block);
+    }
 
     // 随机 Wild 投放：顺序与 Python 一致（替代计算前、触发判定前）
     var rw = cfg.features.random_wild;

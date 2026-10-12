@@ -529,6 +529,52 @@ class PickBonusConfig:
 
 
 @dataclass
+class ColossalSymbolConfig:
+    """巨符号（Colossal Symbol）：每局在网格中投放一个 N×N 的巨型符号块。
+
+    * `size_weights`：块尺寸 -> 权重（0 表示本局不投放）
+    * `symbols`：可投放的符号 -> 权重（通常是高赔付的标准符号）
+    * `reels`：允许的最左轴下标（块必须完整落在网格内）
+    * `rows`：允许的最上排下标
+    * `phases`：生效阶段（base / free_spins）
+    * `protected_symbols`：不允许被覆盖的符号（Scatter / 币值等）
+    """
+
+    enabled: bool = False
+    size_weights: Dict[int, int] = field(default_factory=dict)
+    symbols: Dict[str, int] = field(default_factory=dict)
+    reels: List[int] = field(default_factory=list)
+    rows: List[int] = field(default_factory=list)
+    phases: List[str] = field(default_factory=lambda: ["base"])
+    protected_symbols: List[str] = field(default_factory=list)
+
+    COMBINE_MODES = ("max", "sum", "product")
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "enabled": self.enabled,
+            "size_weights": {int(k): int(v) for k, v in self.size_weights.items()},
+            "symbols": dict(self.symbols),
+            "reels": list(self.reels),
+            "rows": list(self.rows),
+            "phases": list(self.phases),
+            "protected_symbols": list(self.protected_symbols),
+        }
+
+    @staticmethod
+    def from_dict(d: Dict[str, Any]) -> "ColossalSymbolConfig":
+        return ColossalSymbolConfig(
+            enabled=bool(d.get("enabled", False)),
+            size_weights={int(k): int(v) for k, v in (d.get("size_weights") or {}).items()},
+            symbols={k: int(v) for k, v in (d.get("symbols") or {}).items()},
+            reels=[int(x) for x in (d.get("reels") or [])],
+            rows=[int(x) for x in (d.get("rows") or [])],
+            phases=list(d.get("phases") or ["base"]),
+            protected_symbols=list(d.get("protected_symbols") or []),
+        )
+
+
+@dataclass
 class GambleConfig:
     enabled: bool = False
     max_steps: int = 5
@@ -566,6 +612,7 @@ class Features:
     collect: Optional[CollectConfig] = None
     multiplier_wild: Optional[MultiplierWildConfig] = None
     pick_bonus: Optional[PickBonusConfig] = None
+    colossal: Optional[ColossalSymbolConfig] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -578,6 +625,7 @@ class Features:
             "collect": self.collect.to_dict() if self.collect else None,
             "multiplier_wild": self.multiplier_wild.to_dict() if self.multiplier_wild else None,
             "pick_bonus": self.pick_bonus.to_dict() if self.pick_bonus else None,
+            "colossal": self.colossal.to_dict() if self.colossal else None,
         }
 
     @staticmethod
@@ -596,6 +644,7 @@ class Features:
             if d.get("multiplier_wild")
             else None,
             pick_bonus=PickBonusConfig.from_dict(d["pick_bonus"]) if d.get("pick_bonus") else None,
+            colossal=ColossalSymbolConfig.from_dict(d["colossal"]) if d.get("colossal") else None,
         )
 
 
@@ -947,6 +996,39 @@ class GameConfig:
                     errors.append("pick_bonus 无放回时可挑次数不能超过奖品数")
             if pb.award_multiplier <= 0:
                 errors.append("pick_bonus.award_multiplier 必须为正")
+
+        cs = self.features.colossal
+        if cs and cs.enabled:
+            if not cs.size_weights:
+                errors.append("colossal.size_weights 不能为空")
+            for size in cs.size_weights:
+                # 尺寸 0 表示「本局不投放」（与 random_wild.counts 的 0 同义）
+                if int(size) == 0:
+                    continue
+                if int(size) < 2:
+                    errors.append(f"colossal 块尺寸至少为 2: {size}")
+                elif int(size) > min(self.reels, self.rows):
+                    errors.append(
+                        f"colossal 块尺寸 {size} 超过网格范围（{self.reels}x{self.rows}）"
+                    )
+            if not cs.symbols:
+                errors.append("colossal.symbols 不能为空")
+            for sym_id in cs.symbols:
+                if sym_id not in self.symbols:
+                    errors.append(f"colossal 引用未定义符号: {sym_id}")
+                elif self.symbols[sym_id].kind not in (SymbolKind.STANDARD, SymbolKind.WILD):
+                    errors.append(f"colossal 只能投放标准符号或 Wild: {sym_id}")
+            if not cs.reels:
+                errors.append("colossal.reels 不能为空")
+            if not cs.rows:
+                errors.append("colossal.rows 不能为空")
+            if cs.reels and (min(cs.reels) < 0 or max(cs.reels) >= self.reels):
+                errors.append("colossal.reels 超出轴范围")
+            if cs.rows and (min(cs.rows) < 0 or max(cs.rows) >= self.rows):
+                errors.append("colossal.rows 超出排范围")
+            for phase in cs.phases or []:
+                if phase not in ("base", "free_spins", "hold_win"):
+                    errors.append(f"colossal.phases 非法: {phase}")
 
         ew = self.features.expanding_wild
         if ew:

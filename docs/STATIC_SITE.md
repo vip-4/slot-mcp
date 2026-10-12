@@ -19,7 +19,7 @@ python tools/build_static.py --site-url https://vip882.gitee.io/slot-games
 static/
 ├── index.html                # 首页：要点速览 / 机台卡片 / 对比表 / 玩法 / 赔付表 / 术语表 / FAQ
 ├── games/<id>.html           # 5 个机台详情页（独立 canonical + JSON-LD）
-├── data/games.json           # 7 款配置 + Python 侧已洗牌的虚拟条带
+├── data/games.json           # 8 款配置 + Python 侧已洗牌的虚拟条带
 ├── js/{engine.js,app.js}     # 纯前端引擎与交互（来自 web_static/）
 ├── assets/{styles.css,favicon.svg,og-image.png,icon-192.png,icon-512.png}
 ├── robots.txt / sitemap.xml / llms.txt / manifest.webmanifest / 404.html

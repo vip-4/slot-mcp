@@ -21,7 +21,80 @@ __all__ = [
     "place_random_wilds",
     "collect_coins",
     "resolve_pick_bonus",
+    "place_colossal_symbol",
 ]
+
+
+def place_colossal_symbol(
+    grid: Grid,
+    cfg: GameConfig,
+    cc: Any,
+    rng: SlotRNG,
+    phase: str = "base",
+) -> Optional[Dict[str, Any]]:
+    """投放一个 N×N 巨符号块，直接改写网格并返回事件描述。
+
+    抽样顺序（与 JS 端一致）：块尺寸 -> 最左轴 -> 最上排 -> 符号；
+    若块内存在受保护符号（Scatter / 币值等）则放弃本次投放。
+    """
+    if not cc or not cc.enabled:
+        return None
+    if phase not in (cc.phases or ["base"]):
+        return None
+
+    sizes = sorted(int(k) for k in cc.size_weights if int(k) > 0)
+    if not sizes:
+        return None
+    size_total = sum(int(cc.size_weights[s]) for s in sizes)
+    target = rng.random() * size_total
+    acc = 0
+    size = sizes[-1]
+    for s in sizes:
+        acc += int(cc.size_weights[s])
+        if target < acc:
+            size = s
+            break
+    if size <= 1:
+        return None
+
+    reels = [int(r) for r in cc.reels if 0 <= int(r) <= len(grid) - size]
+    rows = [int(r) for r in cc.rows if 0 <= int(r) <= len(grid[0]) - size]
+    if not reels or not rows:
+        return None
+    left = reels[int(rng.random() * len(reels))]
+    top = rows[int(rng.random() * len(rows))]
+
+    sym_ids = list(cc.symbols.keys())
+    sym_total = sum(int(cc.symbols[s]) for s in sym_ids)
+    if sym_total <= 0:
+        return None
+    target = rng.random() * sym_total
+    acc = 0
+    symbol_id = sym_ids[-1]
+    for s in sym_ids:
+        acc += int(cc.symbols[s])
+        if target < acc:
+            symbol_id = s
+            break
+
+    protected = set(cc.protected_symbols or [])
+    positions: List[Position] = []
+    for reel_idx in range(left, left + size):
+        for row_idx in range(top, top + size):
+            if grid[reel_idx][row_idx] in protected:
+                return None
+            positions.append((reel_idx, row_idx))
+    for reel_idx in range(left, left + size):
+        for row_idx in range(top, top + size):
+            grid[reel_idx][row_idx] = symbol_id
+    return {
+        "type": "colossal",
+        "symbol": symbol_id,
+        "size": size,
+        "reel": left,
+        "row": top,
+        "positions": positions,
+    }
 
 
 def resolve_pick_bonus(

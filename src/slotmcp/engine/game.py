@@ -21,6 +21,7 @@ from .features import (
     collect_positions,
     count_symbols,
     keys_to_positions,
+    place_colossal_symbol,
     place_random_wilds,
     resolve_pick_bonus,
 )
@@ -341,6 +342,13 @@ class SlotMachine:
             strip_set = self._current_strip_set(st)
 
         grid, stops = self._roll(st, strip_set)
+
+        # 巨符号：在其它网格改写算子之前投放，保证后续 Wild/触发判定看到的是最终网格
+        cs = cfg.features.colossal
+        if cs and cs.enabled:
+            block = place_colossal_symbol(grid, cfg, cs, self.rng, st.phase)
+            if block:
+                step_events.append(block)
 
         # 随机 Wild 投放：必须在「替代计算之前、触发判定之前」完成，
         # 这样它既能参与线赔，也能影响 Scatter/币值的可见性（但不会覆盖受保护符号）。

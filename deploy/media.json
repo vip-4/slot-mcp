@@ -35,6 +35,31 @@
       }
     },
     {
+      "game": "colossal_ruins",
+      "alt": "巨神遗迹机台主题图：丛林中的古代遗迹石像",
+      "provider": "pexels",
+      "page_url": "https://www.pexels.com/photo/statues-in-front-of-an-ancient-temple-in-cambodia-15890716/",
+      "author": "Serg Alesenko",
+      "author_url": "https://www.pexels.com/@sergk1",
+      "license": "Pexels License（可免费商用，无需署名但建议署名）",
+      "files": {
+        "hero": {
+          "path": "colossal_ruins-hero.jpg",
+          "width": 960,
+          "height": 540,
+          "bytes": 162840,
+          "source": "https://images.pexels.com/photos/15890716/pexels-photo-15890716.jpeg?auto=compress&cs=tinysrgb&fit=crop&w=960&h=540"
+        },
+        "og": {
+          "path": "colossal_ruins-og.jpg",
+          "width": 1200,
+          "height": 630,
+          "bytes": 226615,
+          "source": "https://images.pexels.com/photos/15890716/pexels-photo-15890716.jpeg?auto=compress&cs=tinysrgb&fit=crop&w=1200&h=630"
+        }
+      }
+    },
+    {
       "game": "dragon_palace",
       "alt": "龙宫探宝机台主题图：东方宫殿灯笼与龙纹装饰",
       "provider": "pexels",

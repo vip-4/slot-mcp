@@ -28,6 +28,8 @@ from .features import (
     reveal_mystery_symbols,
     sync_reels,
     walk_wilds,
+    contribute_jackpot,
+    resolve_jackpot,
 )
 from .reels import Grid, ReelStripSet
 from .rng import SlotRNG
@@ -73,6 +75,7 @@ class GameState:
     cascade_multiplier: float = 1.0
     sticky_keys: Dict[str, str] = field(default_factory=dict)  # "reel,row" -> symbol_id
     walking_wilds: List[List[int]] = field(default_factory=list)  # 行走 Wild 落点 [[reel,row], ...]
+    jackpot_pools: Dict[str, float] = field(default_factory=dict)  # 奖池各档当前累积额（跨局）
     respins_left: int = 0
     hold_grid: Optional[Grid] = None
     hold_locked_keys: List[str] = field(default_factory=list)
@@ -93,6 +96,7 @@ class GameState:
             "cascade_multiplier": self.cascade_multiplier,
             "sticky_keys": dict(self.sticky_keys),
             "walking_wilds": [list(p) for p in self.walking_wilds],
+            "jackpot_pools": {k: float(v) for k, v in self.jackpot_pools.items()},
             "respins_left": self.respins_left,
             "hold_grid": copy.deepcopy(self.hold_grid),
             "hold_locked_keys": list(self.hold_locked_keys),
@@ -115,6 +119,7 @@ class GameState:
             cascade_multiplier=float(d.get("cascade_multiplier", 1.0)),
             sticky_keys=dict(d.get("sticky_keys", {})),
             walking_wilds=[list(p) for p in d.get("walking_wilds", [])],
+            jackpot_pools={k: float(v) for k, v in (d.get("jackpot_pools") or {}).items()},
             respins_left=int(d.get("respins_left", 0)),
             hold_grid=copy.deepcopy(d.get("hold_grid")),
             hold_locked_keys=list(d.get("hold_locked_keys", [])),
@@ -219,6 +224,23 @@ class SlotMachine:
         self._strip_sets: Dict[str, ReelStripSet] = {
             name: ReelStripSet(rs, config.rows, name) for name, rs in config.reel_sets.items()
         }
+        # 累积奖池属于「机台」而非「玩家会话」：spin() 每次都会新建 GameState，
+        # 池若挂在运行态上就会在下一局被清空，贡献永远攒不起来。
+        self.jackpot_pools: Dict[str, float] = {}
+        self._init_jackpot_pools()
+
+    # ------------------------------------------------------------------ 奖池
+    def _init_jackpot_pools(self) -> Dict[str, float]:
+        jp = self.config.features.jackpot
+        if jp and jp.enabled:
+            self.jackpot_pools = {lv.name: float(lv.seed or 0.0) for lv in jp.levels}
+        else:
+            self.jackpot_pools = {}
+        return self.jackpot_pools
+
+    def reset_jackpot_pools(self) -> Dict[str, float]:
+        """把奖池重置回种子值（运营侧重置/迁移时使用）。"""
+        return self._init_jackpot_pools()
 
     # ------------------------------------------------------------------ 元信息
     @property
@@ -280,6 +302,14 @@ class SlotMachine:
         events: List[Dict[str, Any]] = []
         turns = 0
         st.purchase_free_spins = 0
+
+        # 奖池贡献：每注一次（付费旋转），累积模式才生效
+        jp = cfg.features.jackpot
+        if jp and jp.enabled:
+            if not self.jackpot_pools:
+                self._init_jackpot_pools()
+            contribute_jackpot(jp, self.jackpot_pools, ctx.total_bet)
+            st.jackpot_pools = dict(self.jackpot_pools)
 
         while turns < MAX_TURNS_PER_SPIN and len(steps) < MAX_STEPS_PER_SPIN:
             turns += 1
@@ -531,6 +561,30 @@ class SlotMachine:
             chosen,
         )
 
+    def _jackpot_award(
+        self, cfg, st: GameState, ctx: BetContext
+    ) -> Optional[WinEvent]:
+        """奖池：按 hit_chance 判定命中，命中后派发该档（固定额 / 当前累积额）。"""
+        jp = cfg.features.jackpot
+        if not jp or not jp.enabled:
+            return None
+        if not self.jackpot_pools:
+            self._init_jackpot_pools()
+        hit = resolve_jackpot(jp, self.rng, self.jackpot_pools, st.phase, ctx.total_bet)
+        if hit is None:
+            return None
+        st.jackpot_pools = dict(self.jackpot_pools)
+        amount = float(hit["amount"])
+        return WinEvent(
+            kind="jackpot",
+            symbol=hit["level"],
+            count=1,
+            positions=[],
+            base_amount=round(amount, 6),
+            amount=round(amount, 6),
+            label=f"{hit['level']} 奖池 ×{amount / ctx.total_bet:.1f}",
+        )
+
     def _settle(
         self,
         st: GameState,
@@ -581,6 +635,16 @@ class SlotMachine:
                             "type": "pick_bonus",
                             "picks": pick[1],
                             "award": pick[0].amount,
+                        }
+                    )
+                jack = self._jackpot_award(cfg, st, ctx)
+                if jack is not None:
+                    wins.append(jack)
+                    events.append(
+                        {
+                            "type": "jackpot",
+                            "level": jack.symbol,
+                            "amount": jack.amount,
                         }
                     )
             step_win = round(sum(w.amount for w in wins), 6)

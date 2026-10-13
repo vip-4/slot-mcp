@@ -26,7 +26,96 @@ __all__ = [
     "walk_wilds",
     "sync_reels",
     "apply_symbol_upgrade",
+    "contribute_jackpot",
+    "resolve_jackpot",
 ]
+
+
+def contribute_jackpot(
+    jp: Any,
+    pools: Dict[str, float],
+    total_bet: float,
+) -> Dict[str, float]:
+    """累积奖池：按各档分摊权重把本注的贡献加进池里（**不消耗随机数**）。
+
+    返回更新后的池。固定奖池（fixed）模式不做任何事。
+    """
+    if not jp or not jp.enabled or jp.mode != "progressive":
+        return pools
+    rate = float(jp.contribution_rate or 0.0)
+    if rate <= 0 or total_bet <= 0:
+        return pools
+    shares = {lv.name: max(0.0, float(lv.contribution_share or 0.0)) for lv in jp.levels}
+    total_share = sum(shares.values())
+    if total_share <= 0:
+        return pools
+    for lv in jp.levels:
+        add = total_bet * rate * (shares[lv.name] / total_share)
+        cap = float(jp.cap or 0.0)
+        value = pools.get(lv.name, float(lv.seed or 0.0)) + add
+        if cap > 0:
+            value = min(value, cap)
+        pools[lv.name] = round(value, 6)
+    return pools
+
+
+def resolve_jackpot(
+    jp: Any,
+    rng: SlotRNG,
+    pools: Dict[str, float],
+    phase: str = "base",
+    total_bet: float = 1.0,
+) -> Optional[Dict[str, Any]]:
+    """奖池命中判定：先抽「是否命中」，命中后再抽「哪一档」。
+
+    * fixed 模式：派发该档的 `amount × total_bet`
+    * progressive 模式：派发该档**当前累积额**，并把该档重置为 `seed`
+    """
+    if not jp or not jp.enabled:
+        return None
+    if phase not in (jp.phases or ["base", "free_spins"]):
+        return None
+    levels = [lv for lv in jp.levels if float(lv.weight) > 0]
+    if not levels:
+        return None
+    chance = float(jp.hit_chance or 0.0)
+    if chance <= 0:
+        return None
+
+    # 1) 抽是否命中
+    if rng.random() >= chance:
+        return None
+
+    # 2) 抽档位
+    total_w = sum(float(lv.weight) for lv in levels)
+    target = rng.random() * total_w
+    acc = 0.0
+    level = levels[-1]
+    for lv in levels:
+        acc += float(lv.weight)
+        if target < acc:
+            level = lv
+            break
+
+    if jp.mode == "progressive":
+        pool = float(pools.get(level.name, float(level.seed or 0.0)))
+        amount = pool
+        pools[level.name] = round(float(level.seed or 0.0), 6)
+        base_amount = amount
+    else:
+        amount = float(level.amount) * float(total_bet)
+        base_amount = amount
+
+    return {
+        "type": "jackpot",
+        "level": level.name,
+        "amount": round(amount, 6),
+        "base_amount": round(base_amount, 6),
+        "mode": jp.mode,
+        "pool_after": round(float(pools.get(level.name, 0.0)), 6)
+        if jp.mode == "progressive"
+        else None,
+    }
 
 
 def apply_symbol_upgrade(

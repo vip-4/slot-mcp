@@ -373,6 +373,7 @@ _EVENT_KINDS = (
     "walking_wild",
     "colossal",
     "sync_reels",
+    "jackpot",
     "symbol_upgrade",
 )
 

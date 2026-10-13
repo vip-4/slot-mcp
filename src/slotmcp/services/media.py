@@ -90,6 +90,11 @@ THEME_QUERIES: Dict[str, Dict[str, str]] = {
         "pixabay": "jungle rainforest leaves",
         "alt": "丛林进化机台主题图：热带雨林与藤蔓",
     },
+    "gold_vein": {
+        "pexels": "gold nuggets gold bars mine",
+        "pixabay": "gold nuggets gold",
+        "alt": "黄金矿脉机台主题图：金块与矿洞",
+    },
 }
 
 HERO_SIZE = (960, 540)

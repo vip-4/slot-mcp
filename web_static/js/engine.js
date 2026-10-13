@@ -224,6 +224,84 @@
     return { type: 'symbol_upgrade', positions: upgraded, count: upgraded.length, to: toSymbols };
   }
 
+  // 奖池：与 Python 端 contribute_jackpot / resolve_jackpot 同构。
+  // 贡献不消耗随机数；命中判定消耗 1 个（是否命中）+ 1 个（哪一档）。
+  function contributeJackpot(jp, pools, totalBet) {
+    if (!jp || !jp.enabled || jp.mode !== 'progressive') return pools;
+    var rate = Number(jp.contribution_rate || 0);
+    if (rate <= 0 || totalBet <= 0) return pools;
+    var shares = {};
+    var totalShare = 0;
+    (jp.levels || []).forEach(function (lv) {
+      var s = Math.max(0, Number(lv.contribution_share || 0));
+      shares[lv.name] = s;
+      totalShare += s;
+    });
+    if (totalShare <= 0) return pools;
+    var cap = Number(jp.cap || 0);
+    (jp.levels || []).forEach(function (lv) {
+      var value = pools[lv.name];
+      if (value === undefined) value = Number(lv.seed || 0);
+      value += totalBet * rate * (shares[lv.name] / totalShare);
+      if (cap > 0 && value > cap) value = cap;
+      pools[lv.name] = Math.round(value * 1e6) / 1e6;
+    });
+    return pools;
+  }
+
+  function jackpotAward(machine, cfg, st, ctx) {
+    var jp = cfg.features.jackpot;
+    if (!jp || !jp.enabled) return null;
+    var phases = jp.phases || ['base', 'free_spins'];
+    if (phases.indexOf(st.phase) < 0) return null;
+    var levels = (jp.levels || []).filter(function (lv) {
+      return Number(lv.weight) > 0;
+    });
+    if (!levels.length) return null;
+    var chance = Number(jp.hit_chance || 0);
+    if (chance <= 0) return null;
+
+    // 1) 抽是否命中
+    if (machine.rng.random() >= chance) return null;
+
+    // 2) 抽档位
+    var totalW = 0;
+    levels.forEach(function (lv) {
+      totalW += Number(lv.weight);
+    });
+    var target = machine.rng.random() * totalW;
+    var acc = 0;
+    var level = levels[levels.length - 1];
+    for (var i = 0; i < levels.length; i++) {
+      acc += Number(levels[i].weight);
+      if (target < acc) {
+        level = levels[i];
+        break;
+      }
+    }
+
+    var amount;
+    if (jp.mode === 'progressive') {
+      var pool = machine.jackpotPools[level.name];
+      if (pool === undefined) pool = Number(level.seed || 0);
+      amount = Number(pool);
+      machine.jackpotPools[level.name] = Math.round(Number(level.seed || 0) * 1e6) / 1e6;
+    } else {
+      amount = Number(level.amount) * Number(ctx.totalBet);
+    }
+    amount = Math.round(amount * 1e6) / 1e6;
+    st.jackpotPools = Object.assign({}, machine.jackpotPools);
+    return {
+      kind: 'jackpot',
+      symbol: level.name,
+      count: 1,
+      positions: [],
+      baseAmount: amount,
+      amount: amount,
+      label: level.name + ' 奖池 ×' + (amount / ctx.totalBet).toFixed(1)
+    };
+  }
+
   // 同步轴：与 Python 端 sync_reels 同构（先抽同步轴数，再抽起始轴）
   function syncReels(grid, sr, rng, phase) {
     if (!sr || !sr.enabled) return null;
@@ -757,6 +835,7 @@
     this.holdPot = 0.0;
     this.totalWin = 0.0;
     this.spinCount = 0;
+    this.jackpotPools = {}; // 奖池各档当前累积额（机台级的镜像，供 UI 展示）
   }
 
   GameState.prototype.clone = function () {
@@ -779,7 +858,22 @@
     Object.keys(this.cfg.reel_sets).forEach(function (name) {
       self.strips[name] = buildStrips(self.cfg, name);
     });
+    // 累积奖池属于机台而非玩家会话：spin() 每次都会新建 GameState，
+    // 池若挂在会话上就会在下一局被清空，贡献永远攒不起来。
+    this.jackpotPools = {};
+    this.initJackpotPools();
   }
+
+  SlotMachine.prototype.initJackpotPools = function () {
+    var jp = this.cfg.features.jackpot;
+    this.jackpotPools = {};
+    if (jp && jp.enabled) {
+      (jp.levels || []).forEach(function (lv) {
+        this.jackpotPools[lv.name] = Number(lv.seed || 0);
+      }, this);
+    }
+    return this.jackpotPools;
+  };
 
   SlotMachine.prototype.buildContext = function (totalBet, activeLines) {
     var cfg = this.cfg;
@@ -817,6 +911,13 @@
     st.totalWin = 0;
     st.spinCount += 1;
     st.purchaseFreeSpins = 0;
+
+    // 奖池贡献：每注一次（付费旋转），累积模式才生效（不消耗随机数）
+    var jp = this.cfg.features.jackpot;
+    if (jp && jp.enabled) {
+      contributeJackpot(jp, this.jackpotPools, ctx.totalBet);
+      st.jackpotPools = Object.assign({}, this.jackpotPools);
+    }
 
     var steps = [];
     var events = [];
@@ -1024,6 +1125,11 @@
         if (pick) {
           wins.push(pick.win);
           events.push({ type: 'pick_bonus', picks: pick.picked, award: pick.win.amount });
+        }
+        var jack = jackpotAward(this, cfg, st, ctx);
+        if (jack) {
+          wins.push(jack);
+          events.push({ type: 'jackpot', level: jack.symbol, amount: jack.amount });
         }
       }
       var stepWin = 0;

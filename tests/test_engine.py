@@ -33,7 +33,7 @@ def check(condition: bool, message: str) -> None:
 def test_configuration() -> None:
     print("[engine] 配置与校验")
     ids = game_ids()
-    check(len(ids) == 12, f"内置 12 款机台: {', '.join(ids)}")
+    check(len(ids) == 13, f"内置 13 款机台: {', '.join(ids)}")
     check("fortune_koi" in ids, "新增机台 fortune_koi 已注册")
     for cfg in iter_game_configs():
         errors = cfg.validate()
@@ -1083,6 +1083,196 @@ def test_symbol_upgrade_config_validation() -> None:
     check(any("ladder 不能为空" in e for e in empty.validate()), "空阶梯被拦截")
 
 
+def test_jackpot() -> None:
+    print("[engine] 奖池（Jackpot）")
+    from slotmcp.engine.config import JackpotConfig, JackpotLevel, set_parameter
+    from slotmcp.engine.features import contribute_jackpot, resolve_jackpot
+
+    gv = get_registry().get("gold_vein")
+    cfg = gv.config
+    jp = cfg.features.jackpot
+    check(jp is not None and jp.enabled, "gold_vein 启用奖池")
+    check(jp.mode == "progressive", "使用累积模式")
+    check(any(lv.name == "Grand" for lv in jp.levels), "四档奖池含 Grand")
+
+    # 贡献：按 contribution_share 分摊，不消耗随机数
+    pools = {lv.name: float(lv.seed) for lv in jp.levels}
+    before = dict(pools)
+    contribute_jackpot(jp, pools, 100.0)
+    contributed = sum(pools[k] - before[k] for k in pools)
+    check(abs(contributed - 100.0 * jp.contribution_rate) < 1e-6, f"每注贡献 2%：{contributed:.4f}")
+    mini_add = pools["Mini"] - before["Mini"]
+    grand_add = pools["Grand"] - before["Grand"]
+    check(mini_add > grand_add, f"分摊权重生效（Mini +{mini_add:.3f} > Grand +{grand_add:.3f}）")
+
+    # 固定奖池模式：派发 amount × total_bet
+    fixed = JackpotConfig(
+        enabled=True,
+        mode="fixed",
+        levels=[JackpotLevel(name="Mini", amount=25.0, weight=1.0)],
+        hit_chance=1.0,
+        phases=["base"],
+    )
+    fpools: Dict[str, float] = {}
+    hit = resolve_jackpot(fixed, SlotRNG("fixed"), fpools, "base", 2.0)
+    check(hit is not None and hit["level"] == "Mini", f"必中时命中 Mini：{hit}")
+    check(abs(hit["amount"] - 50.0) < 1e-6, f"固定奖池按总注缩放：{hit['amount']}")
+
+    # 累积模式：派发当前池并重置为 seed
+    prog = JackpotConfig(
+        enabled=True,
+        mode="progressive",
+        levels=[JackpotLevel(name="Major", amount=300.0, weight=1.0, seed=60.0)],
+        hit_chance=1.0,
+        contribution_rate=0.02,
+        phases=["base"],
+    )
+    ppools = {"Major": 123.0}
+    hit2 = resolve_jackpot(prog, SlotRNG("prog"), ppools, "base", 1.0)
+    check(hit2 is not None and abs(hit2["amount"] - 123.0) < 1e-6, f"派发当前累积额：{hit2}")
+    check(abs(ppools["Major"] - 60.0) < 1e-6, f"派发后重置为种子：{ppools}")
+
+    # 阶段不匹配 / 未命中
+    only_base = JackpotConfig(
+        enabled=True,
+        mode="fixed",
+        levels=[JackpotLevel(name="Mini", amount=25.0, weight=1.0)],
+        hit_chance=1.0,
+        phases=["base"],
+    )
+    check(resolve_jackpot(only_base, SlotRNG("x"), {}, "free_spins", 1.0) is None, "不在生效阶段时不判定")
+    never = JackpotConfig(
+        enabled=True,
+        mode="fixed",
+        levels=[JackpotLevel(name="Mini", amount=25.0, weight=1.0)],
+        hit_chance=0.0,
+    )
+    check(resolve_jackpot(never, SlotRNG("y"), {}, "base", 1.0) is None, "hit_chance=0 时永不命中")
+
+    # 档位权重分布（60 / 28 / 10 / 2）
+    hits: Dict[str, int] = {}
+    for i in range(4000):
+        p = {lv.name: float(lv.seed) for lv in jp.levels}
+        e = resolve_jackpot(
+            JackpotConfig(
+                enabled=True,
+                mode="fixed",
+                levels=[JackpotLevel(name=lv.name, amount=lv.amount, weight=lv.weight) for lv in jp.levels],
+                hit_chance=1.0,
+                phases=["base"],
+            ),
+            SlotRNG(f"lv{i}"),
+            p,
+            "base",
+            1.0,
+        )
+        assert e is not None
+        hits[e["level"]] = hits.get(e["level"], 0) + 1
+    total = sum(hits.values())
+    for name, expect in (("Mini", 0.60), ("Minor", 0.28), ("Major", 0.10), ("Grand", 0.02)):
+        got = hits.get(name, 0) / total
+        check(abs(got - expect) < 0.03, f"{name} 占比 ≈{expect}（实际 {got:.3f}）")
+
+    # 端到端：奖池挂在机台上，跨「多次 spin 调用」持续累积
+    gv.reset_jackpot_pools()
+    gv.rng = SlotRNG("gold")
+    start = dict(gv.jackpot_pools)
+    jack_wins = 0.0
+    for _ in range(3000):
+        res = gv.spin(total_bet=1.0)
+        for step in res.steps:
+            for w in step.wins:
+                if w.kind == "jackpot":
+                    jack_wins += w.amount
+        assert res.state.jackpot_pools == gv.jackpot_pools, "会话镜像应与机台奖池一致"
+    grew = sum(gv.jackpot_pools[k] - start[k] for k in gv.jackpot_pools)
+    check(grew > 0, f"跨 3000 局后奖池仍在累积（净增 {grew:.1f}）")
+    check(jack_wins > 0, f"端到端可开出奖池（累计 {jack_wins:.1f}）")
+
+    # 参数可调：contribution_rate 归零后池不再增长
+    set_parameter(cfg, "features.jackpot.contribution_rate", 0.0)
+    snapshot = dict(gv.jackpot_pools)
+    for _ in range(500):
+        gv.spin(total_bet=1.0)
+    frozen = all(abs(gv.jackpot_pools[k] - snapshot[k]) < 1e-6 for k in snapshot)
+    set_parameter(cfg, "features.jackpot.contribution_rate", 0.02)
+    check(frozen, "slot_set_parameter 可关闭贡献并即时生效")
+
+
+def test_jackpot_config_validation() -> None:
+    print("[engine] 奖池配置校验")
+    from slotmcp.engine.config import Features, GameConfig, JackpotConfig, JackpotLevel
+
+    base = dict(
+        id="bad_jackpot",
+        name="bad",
+        reels=5,
+        rows=3,
+        symbols={"plume": _sym("plume", "standard")},
+        reel_sets={"base": _reel_set(["plume"])},
+    )
+
+    def _mk(**kw) -> GameConfig:
+        return GameConfig(features=Features(jackpot=JackpotConfig(enabled=True, **kw)), **base)
+
+    bad = _mk(
+        mode="lottery",
+        levels=[JackpotLevel(name="", amount=0.0, weight=0.0, contribution_share=0.0, seed=-1.0)],
+        hit_chance=0.0,
+        contribution_rate=0.9,
+        cap=-1.0,
+        phases=["nonsense"],
+    )
+    errors = bad.validate()
+    joined = " | ".join(errors)
+    check(any("jackpot.mode 非法" in e for e in errors), f"非法模式被拦截：{joined[:200]}")
+    check(any("缺少档位名" in e for e in errors), "空档位名被拦截")
+    check(any("档位金额必须为正" in e for e in errors), "非正金额被拦截")
+    check(any("档位权重必须为正" in e for e in errors), "非正权重被拦截")
+    check(any("贡献分摊必须为正" in e for e in errors), "非正分摊被拦截")
+    check(any("种子不能为负" in e for e in errors), "负种子被拦截")
+    check(any("hit_chance" in e for e in errors), "非法命中率被拦截")
+    check(any("contribution_rate 超出合理区间" in e for e in errors), "过高贡献率被拦截")
+    check(any("jackpot.cap 不能为负" in e for e in errors), "负上限被拦截")
+    check(any("jackpot.phases 非法" in e for e in errors), "非法阶段被拦截")
+
+    empty = _mk(mode="fixed", levels=[], hit_chance=0.001)
+    check(any("jackpot.levels 不能为空" in e for e in empty.validate()), "空档位表被拦截")
+
+    dup = _mk(
+        mode="fixed",
+        levels=[
+            JackpotLevel(name="Mini", amount=10.0, weight=1.0),
+            JackpotLevel(name="Mini", amount=20.0, weight=1.0),
+        ],
+        hit_chance=0.001,
+    )
+    check(any("档位名不能重复" in e for e in dup.validate()), "重复档位名被拦截")
+
+    prog_no_rate = _mk(
+        mode="progressive",
+        levels=[JackpotLevel(name="Mini", amount=10.0, weight=1.0, seed=5.0)],
+        hit_chance=0.001,
+        contribution_rate=0.0,
+    )
+    check(any("累积模式必须设置 contribution_rate" in e for e in prog_no_rate.validate()), "累积模式缺贡献率被拦截")
+
+    fixed_with_rate = _mk(
+        mode="fixed",
+        levels=[JackpotLevel(name="Mini", amount=10.0, weight=1.0)],
+        hit_chance=0.001,
+        contribution_rate=0.02,
+    )
+    check(any("固定奖池模式不接受 contribution_rate" in e for e in fixed_with_rate.validate()), "固定模式带贡献率被拦截")
+
+    greedy = _mk(
+        mode="fixed",
+        levels=[JackpotLevel(name="Mini", amount=1000.0, weight=1.0)],
+        hit_chance=0.5,
+    )
+    check(any("期望返还过高" in e for e in greedy.validate()), "固定奖池期望返还过高被拦截")
+
+
 def test_session() -> None:
     print("[engine] 会话与钱包")
     machine = get_registry().get("lucky_fruits")
@@ -1170,6 +1360,8 @@ def main() -> int:
     test_sync_reels_config_validation()
     test_symbol_upgrade()
     test_symbol_upgrade_config_validation()
+    test_jackpot()
+    test_jackpot_config_validation()
     test_session()
     test_hot_reload()
     test_rtp_regression()

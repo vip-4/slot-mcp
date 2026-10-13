@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>霓虹双子｜5×3 20 条赔付线 免费在线老虎机</title>
 <meta name="description" content="霓虹双子：5×3 网格、20 条赔付线，霓虹双子采用 5×3 网格与 20 条赔付线。每局会随机挑选 2~5 个相邻轴显示完全相同的符号，同步后的网格再进入结算，因此命中率明显高于同规格机台；双子门触发 8/12/16 次免费旋转，倍率 [1,2,3] 递增并可再触发。目标 RTP 96%，纯静态网页免下载即玩。">
-<meta name="keywords" content="霓虹双子,免费老虎机,在线老虎机,20 条赔付线,RTP,SLOT,在线老虎机,免费老虎机,SLOT,老虎机游戏,水果机,免费旋转,Hold and Win,级联,Cash Collect,Walking Wild,Mystery Symbol,老虎机模拟器,RTP,静态网页游戏,开源老虎机,Blender MCP">
+<meta name="keywords" content="霓虹双子,免费老虎机,在线老虎机,20 条赔付线,RTP,SLOT,在线老虎机,免费老虎机,SLOT,老虎机游戏,水果机,免费旋转,Hold and Win,级联,Cash Collect,Walking Wild,Mystery Symbol,Progressive Jackpot,老虎机模拟器,RTP,静态网页游戏,开源老虎机,Blender MCP">
 <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1">
 <meta name="author" content="Blender Slot MCP">
 <meta name="theme-color" content="#0b0714">
@@ -93,7 +93,7 @@
       {
         "@type": "HowToStep",
         "position": 1,
-        "text": "在「机台」下拉框中选择一款主题（共 12 款）。"
+        "text": "在「机台」下拉框中选择一款主题（共 13 款）。"
       },
       {
         "@type": "HowToStep",
@@ -131,7 +131,7 @@
     <nav class="nav" aria-label="主导航">
       <ul>
         <li><a href="../index.html">首页</a></li>
-        <li><a href="../games/candy_carnival.html">糖果狂欢</a></li><li><a href="../games/colossal_ruins.html">巨神遗迹</a></li><li><a href="../games/dragon_palace.html">龙宫探宝</a></li><li><a href="../games/fortune_koi.html">锦鲤纳福</a></li><li><a href="../games/frost_wolf.html">冰原狼踪</a></li><li><a href="../games/jungle_evolve.html">丛林进化</a></li><li><a href="../games/lucky_fruits.html">幸运水果机</a></li><li><a href="../games/neon_twins.html" aria-current="page">霓虹双子</a></li><li><a href="../games/pharaoh_tomb.html">法老之墓</a></li><li><a href="../games/phoenix_rebirth.html">凤凰涅槃</a></li><li><a href="../games/star_expedition.html">星际远征</a></li><li><a href="../games/thunder_temple.html">雷霆神殿</a></li>
+        <li><a href="../games/candy_carnival.html">糖果狂欢</a></li><li><a href="../games/colossal_ruins.html">巨神遗迹</a></li><li><a href="../games/dragon_palace.html">龙宫探宝</a></li><li><a href="../games/fortune_koi.html">锦鲤纳福</a></li><li><a href="../games/frost_wolf.html">冰原狼踪</a></li><li><a href="../games/gold_vein.html">黄金矿脉</a></li><li><a href="../games/jungle_evolve.html">丛林进化</a></li><li><a href="../games/lucky_fruits.html">幸运水果机</a></li><li><a href="../games/neon_twins.html" aria-current="page">霓虹双子</a></li><li><a href="../games/pharaoh_tomb.html">法老之墓</a></li><li><a href="../games/phoenix_rebirth.html">凤凰涅槃</a></li><li><a href="../games/star_expedition.html">星际远征</a></li><li><a href="../games/thunder_temple.html">雷霆神殿</a></li>
       </ul>
     </nav>
   </div>
@@ -159,10 +159,11 @@
       <p class="badge" id="feature-badge" role="status">基础旋转</p>
       <p>
         <label for="game-select">机台</label>
-        <select id="game-select"><option value="candy_carnival">糖果狂欢</option><option value="colossal_ruins">巨神遗迹</option><option value="dragon_palace">龙宫探宝</option><option value="fortune_koi">锦鲤纳福</option><option value="frost_wolf">冰原狼踪</option><option value="jungle_evolve">丛林进化</option><option value="lucky_fruits">幸运水果机</option><option value="neon_twins" selected>霓虹双子</option><option value="pharaoh_tomb">法老之墓</option><option value="phoenix_rebirth">凤凰涅槃</option><option value="star_expedition">星际远征</option><option value="thunder_temple">雷霆神殿</option></select>
+        <select id="game-select"><option value="candy_carnival">糖果狂欢</option><option value="colossal_ruins">巨神遗迹</option><option value="dragon_palace">龙宫探宝</option><option value="fortune_koi">锦鲤纳福</option><option value="frost_wolf">冰原狼踪</option><option value="gold_vein">黄金矿脉</option><option value="jungle_evolve">丛林进化</option><option value="lucky_fruits">幸运水果机</option><option value="neon_twins" selected>霓虹双子</option><option value="pharaoh_tomb">法老之墓</option><option value="phoenix_rebirth">凤凰涅槃</option><option value="star_expedition">星际远征</option><option value="thunder_temple">雷霆神殿</option></select>
       </p>
     </div>
     <div id="reels" class="reels" aria-label="转轮网格" role="group"></div>
+    <p id="jackpot-pools" class="jackpot-pools" role="status" hidden></p>
     <p id="win-line" class="win-line" aria-live="polite">正在加载机台配置…</p>
     <div class="controls">
       <label for="bet-select">每局总注</label>
@@ -207,14 +208,14 @@
       <tbody><tr><th scope="row"><span class="sym" style="--sym:#ff6b9d">💖</span>霓虹心</th><td>标准符号</td><td>21.49</td></tr><tr><th scope="row"><span class="sym" style="--sym:#b8a4ff">💿</span>唱片</th><td>标准符号</td><td>18.27</td></tr><tr><th scope="row"><span class="sym" style="--sym:#8ad7ff">🎧</span>耳机</th><td>标准符号</td><td>14.50</td></tr><tr><th scope="row"><span class="sym" style="--sym:#ffd45c">🎸</span>吉他</th><td>标准符号</td><td>11.28</td></tr><tr><th scope="row"><span class="sym" style="--sym:#c6a4ff">🎲</span>骰子</th><td>标准符号</td><td>8.60</td></tr><tr><th scope="row"><span class="sym" style="--sym:#7cf6c8">⭐</span>星标</th><td>标准符号</td><td>6.44</td></tr><tr><th scope="row"><span class="sym" style="--sym:#f0f8ff">🔷</span>棱镜 Wild</th><td>Wild 百搭</td><td>26.87</td></tr><tr><th scope="row"><span class="sym" style="--sym:#ff9ecd">🚪</span>双子门 Scatter</th><td>Scatter 散落</td><td>23.64</td></tr></tbody></table></div>
   </section>
 
-  <section id="how" aria-labelledby="how-title"><h2 id="how-title">玩法说明</h2><ol><li>在「机台」下拉框中选择一款主题（共 12 款）。</li><li>在「每局总注」中选择投注额度，范围 0.20 至 100.00 积分。</li><li>点击「旋转」或按空格键开始一局；点击「自动 10 次」可连续游玩。</li><li>中奖符号会高亮，级联 / 重转 / 免费旋转 / Hold &amp; Win 会按步骤依次播放。</li><li>部分机台中奖后可进入红黑翻倍博彩，选择红或黑继续翻倍，或直接收下奖金。</li></ol></section>
+  <section id="how" aria-labelledby="how-title"><h2 id="how-title">玩法说明</h2><ol><li>在「机台」下拉框中选择一款主题（共 13 款）。</li><li>在「每局总注」中选择投注额度，范围 0.20 至 100.00 积分。</li><li>点击「旋转」或按空格键开始一局；点击「自动 10 次」可连续游玩。</li><li>中奖符号会高亮，级联 / 重转 / 免费旋转 / Hold &amp; Win 会按步骤依次播放。</li><li>部分机台中奖后可进入红黑翻倍博彩，选择红或黑继续翻倍，或直接收下奖金。</li></ol></section>
   <section id="terms" aria-labelledby="terms-title"><h2 id="terms-title">术语表</h2><dl class="terms"><dt>RTP（Return to Player）</dt><dd>长期返还率。96% 表示理论上每投入 100 积分，长期平均返还 96 积分；单局结果仍完全随机。</dd><dt>波动率（Volatility）</dt><dd>描述奖金分布的离散程度。低波动小奖频繁，高波动大奖稀有但倍率高。</dd><dt>赔付线（Payline）</dt><dd>固定线机台上预先定义的符号连线，中奖需从最左侧轴开始连续匹配。</dd><dt>Ways（全盘通路）</dt><dd>不记线，只要相邻轴出现同一符号即中奖，通路数为各轴出现次数之积（如 243 Ways、4096 Ways）。</dd><dt>Wild（百搭）</dt><dd>可替代其它参与赔付的符号，部分机台还带有倍率或扩展、锁定效果。</dd><dt>Scatter（ scatter 散落符号）</dt><dd>按全盘出现个数赔付或触发免费旋转，不要求落在赔付线上。</dd><dt>Hold &amp; Win（宝箱重转）</dt><dd>触发后锁定赏金符号并重置重转次数，每新增一个赏金符号都会延长重转，可开出固定奖池。</dd><dt>Cash Collect（金币收集）</dt><dd>屏上同时出现「收集者」（通常是 Wild）与币值符号时，一次性收取全部币值；币值以总注倍数计。</dd><dt>随机 Wild 投放</dt><dd>每局按权重在网格中随机投放若干 Wild，投放后仍参与线赔计算；常用于提升基础 game 的节奏感。</dd><dt>倍率 Wild</dt><dd>Wild 自带倍率并参与命中赔付的相乘；同一命中里多个倍率 Wild 可按「取最大 / 相加 / 相乘」合并。</dd><dt>Pick&#x27;em 选宝奖励</dt><dd>触发符号达到个数后连续挑选若干次，奖品以总注倍数计，可选有放回或无放回。</dd><dt>巨符号（Colossal Symbol）</dt><dd>每局先在网格里投放一个 N×N 的同符号方块再结算，方块尺寸、落点范围与可投放符号都由配置决定。</dd><dt>神秘符号（Mystery Symbol）</dt><dd>屏上的占位符号（如凤凰蛋）在结算前统一揭示为同一个随机符号，可能连成大片；也可配置成逐格独立揭示。</dd><dt>行走 Wild（Walking Wild）</dt><dd>Wild 落下后每局向指定方向移动一列，移出网格或撞到受保护符号才消失；跨局保存落点，通常在免费旋转里生效。</dd><dt>同步轴（Twin / Sync Reels）</dt><dd>每局随机挑选若干相邻轴显示完全相同的符号，复制后整个网格才进入结算；同步轴数按权重抽取。</dd><dt>符号升级（Symbol Upgrade）</dt><dd>级联中命中的符号沿阶梯升一档并保留在屏上，下一轮以更高赔付继续结算；每格每局只升级一次。</dd><dt>级联（Cascade / 雪崩）</dt><dd>中奖符号消除后上方符号坠落补位，形成一次投注多次结算，倍率逐级递增。</dd></dl></section>
-  <section id="faq" class="faq" aria-labelledby="faq-title"><h2 id="faq-title">常见问题</h2><details open><summary>这些老虎机游戏是完全免费的吗？</summary><p>是的。6 款机台全部免费、无需注册、无需下载，打开网页即可游玩，游戏内使用的是虚拟积分，不涉及任何真实货币。</p></details><details open><summary>RTP（返还率）是多少？</summary><p>六款机台的目标 RTP 均为 96%。以每机台 20 万局蒙特卡洛仿真实测，实际 RTP 落在 95.40% 至 97.20% 之间，具体数值见本页「机台参数对比」表。</p></details><details open><summary>需要在手机上安装 App 吗？</summary><p>不需要。站点是纯静态网页，只用到 HTML、CSS 与少量 JavaScript，桌面与移动浏览器均可直接运行，离线缓存后也可继续游玩。</p></details><details open><summary>游戏数据会上传到服务器吗？</summary><p>不会。所有对局都在浏览器本地完成计算，积分保存在浏览器 localStorage 中，页面不发起任何数据上报请求。</p></details><details open><summary>老虎机的赔付是怎么判定的？</summary><p>固定线机台（幸运水果、糖果狂欢、龙宫探宝、锦鲤纳福、雷霆神殿、巨神遗迹、凤凰涅槃、冰原狼踪）按赔付线从左至右逐轴连续匹配；全盘 Ways 机台（法老之墓、星际远征）按相邻轴出现次数相乘得到通路数。Scatter 按全盘个数赔付，单位与总注挂钩；锦鲤纳福另有 Cash Collect：屏上出现锦鲤 Wild 时，按总注倍数收集全部金币面值。</p></details><details open><summary>能不能自己调整赔率或加新机台？</summary><p>可以。全部机台由同一套 CONFIG 引擎驱动，新增一款机台只需新增一份配置（转轮条带、赔率表、线数、特性开关），引擎与前端无需改动；源码以 MIT 协议开源。</p></details><details open><summary>这个项目与 Blender 有什么关系？</summary><p>同一套引擎通过 MCP（Model Context Protocol）对外暴露工具，Blender 侧插件可订阅旋转结果，在三维场景中驱动机台模型与转轮动画；网页版则是同一引擎的纯前端部署形态。</p></details></section>
+  <section id="faq" class="faq" aria-labelledby="faq-title"><h2 id="faq-title">常见问题</h2><details open><summary>这些老虎机游戏是完全免费的吗？</summary><p>是的。13 款机台全部免费、无需注册、无需下载，打开网页即可游玩，游戏内使用的是虚拟积分，不涉及任何真实货币。</p></details><details open><summary>RTP（返还率）是多少？</summary><p>13 款机台的目标 RTP 均为 96%。以每机台 20 万局蒙特卡洛仿真实测，实际 RTP 落在 95.40% 至 97.20% 之间，具体数值见本页「机台参数对比」表。</p></details><details open><summary>需要在手机上安装 App 吗？</summary><p>不需要。站点是纯静态网页，只用到 HTML、CSS 与少量 JavaScript，桌面与移动浏览器均可直接运行，离线缓存后也可继续游玩。</p></details><details open><summary>游戏数据会上传到服务器吗？</summary><p>不会。所有对局都在浏览器本地完成计算，积分保存在浏览器 localStorage 中，页面不发起任何数据上报请求。</p></details><details open><summary>老虎机的赔付是怎么判定的？</summary><p>固定线机台（幸运水果、糖果狂欢、龙宫探宝、锦鲤纳福、雷霆神殿、巨神遗迹、凤凰涅槃、冰原狼踪）按赔付线从左至右逐轴连续匹配；全盘 Ways 机台（法老之墓、星际远征）按相邻轴出现次数相乘得到通路数。Scatter 按全盘个数赔付，单位与总注挂钩；锦鲤纳福另有 Cash Collect：屏上出现锦鲤 Wild 时，按总注倍数收集全部金币面值。</p></details><details open><summary>能不能自己调整赔率或加新机台？</summary><p>可以。全部机台由同一套 CONFIG 引擎驱动，新增一款机台只需新增一份配置（转轮条带、赔率表、线数、特性开关），引擎与前端无需改动；源码以 MIT 协议开源。</p></details><details open><summary>这个项目与 Blender 有什么关系？</summary><p>同一套引擎通过 MCP（Model Context Protocol）对外暴露工具，Blender 侧插件可订阅旋转结果，在三维场景中驱动机台模型与转轮动画；网页版则是同一引擎的纯前端部署形态。</p></details></section>
 </article>
 </main>
 <footer class="site-footer">
   <div class="wrap">
-    <p><strong>Blender SLOT 游戏合集</strong> · 12 款免费在线老虎机 · 纯静态 · 无需下载。全部机台由同一套 CONFIG 引擎驱动，源码以 MIT 协议开源。</p>
+    <p><strong>Blender SLOT 游戏合集</strong> · 13 款免费在线老虎机 · 纯静态 · 无需下载。全部机台由同一套 CONFIG 引擎驱动，源码以 MIT 协议开源。</p>
     <ul>
       <li><a href="../index.html">首页</a></li>
       <li><a href="../sitemap.xml">站点地图</a></li>

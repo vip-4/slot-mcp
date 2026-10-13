@@ -744,6 +744,95 @@ class SymbolUpgradeConfig:
 
 
 @dataclass
+class JackpotLevel:
+    """奖池的一档。
+
+    * `amount`：固定奖池（`mode=fixed`）模式下直接派发的总注倍数
+    * `weight`：被抽中的权重（大奖权重小）
+    * `seed`：累积奖池（`mode=progressive`）模式下的重置种子（总注倍数）
+    * `contribution_share`：累积模式下的贡献分摊权重（大奖分得少、涨得慢）
+    """
+
+    name: str = ""
+    amount: float = 0.0
+    weight: float = 1.0
+    seed: float = 0.0
+    contribution_share: float = 1.0
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "name": self.name,
+            "amount": float(self.amount),
+            "weight": float(self.weight),
+            "seed": float(self.seed),
+            "contribution_share": float(self.contribution_share),
+        }
+
+    @staticmethod
+    def from_dict(d: Dict[str, Any]) -> "JackpotLevel":
+        return JackpotLevel(
+            name=d.get("name", ""),
+            amount=float(d.get("amount", 0.0)),
+            weight=float(d.get("weight", 1.0)),
+            seed=float(d.get("seed", 0.0)),
+            contribution_share=float(d.get("contribution_share", 1.0)),
+        )
+
+
+@dataclass
+class JackpotConfig:
+    """奖池（Jackpot）：每注抽取一部分进入奖池，命中时整档派发。
+
+    两种模式：
+
+    * `fixed`：固定奖池——命中时直接派发该档的 `amount`（总注倍数），RTP 分量
+      = `hit_chance` × 加权平均 `amount`，与下注额无关，最易调参。
+    * `progressive`：累积奖池——每注按 `contribution_rate` 累积进各档（按
+      `contribution_share` 分摊），命中时派发该档**当前累积额**并重置为 `seed`。
+      长期 RTP 分量 ≈ `contribution_rate`（贡献全部返还，守恒），
+      代价是短期波动大（大奖池被抽走的那一下会拉高最大倍率）。
+
+    这是首个带「资金流」语义的算子：池保存在 `GameState.jackpot_pools`（跨局），
+    因此**必须**在会话/重置时一并处理，不能像纯网格算子那样随手清空。
+
+    RNG 消耗顺序：先抽「是否命中」（1 个随机数），命中后再抽「哪一档」（1 个随机数）。
+    """
+
+    enabled: bool = False
+    mode: str = "fixed"
+    levels: List[JackpotLevel] = field(default_factory=list)
+    hit_chance: float = 0.0
+    contribution_rate: float = 0.0
+    phases: List[str] = field(default_factory=lambda: ["base", "free_spins"])
+    cap: float = 0.0
+
+    MODES = ("fixed", "progressive")
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "enabled": self.enabled,
+            "mode": self.mode,
+            "levels": [lv.to_dict() for lv in self.levels],
+            "hit_chance": float(self.hit_chance),
+            "contribution_rate": float(self.contribution_rate),
+            "phases": list(self.phases),
+            "cap": float(self.cap),
+        }
+
+    @staticmethod
+    def from_dict(d: Dict[str, Any]) -> "JackpotConfig":
+        return JackpotConfig(
+            enabled=bool(d.get("enabled", False)),
+            mode=d.get("mode", "fixed"),
+            levels=[JackpotLevel.from_dict(x) for x in (d.get("levels") or [])],
+            hit_chance=float(d.get("hit_chance", 0.0)),
+            contribution_rate=float(d.get("contribution_rate", 0.0)),
+            phases=list(d.get("phases") or ["base", "free_spins"]),
+            cap=float(d.get("cap", 0.0)),
+        )
+
+
+@dataclass
 class GambleConfig:
     enabled: bool = False
     max_steps: int = 5
@@ -786,6 +875,7 @@ class Features:
     walking_wild: Optional[WalkingWildConfig] = None
     sync_reels: Optional[SyncReelsConfig] = None
     symbol_upgrade: Optional[SymbolUpgradeConfig] = None
+    jackpot: Optional[JackpotConfig] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return {
@@ -803,6 +893,7 @@ class Features:
             "walking_wild": self.walking_wild.to_dict() if self.walking_wild else None,
             "sync_reels": self.sync_reels.to_dict() if self.sync_reels else None,
             "symbol_upgrade": self.symbol_upgrade.to_dict() if self.symbol_upgrade else None,
+            "jackpot": self.jackpot.to_dict() if self.jackpot else None,
         }
 
     @staticmethod
@@ -828,6 +919,7 @@ class Features:
             symbol_upgrade=SymbolUpgradeConfig.from_dict(d["symbol_upgrade"])
             if d.get("symbol_upgrade")
             else None,
+            jackpot=JackpotConfig.from_dict(d["jackpot"]) if d.get("jackpot") else None,
         )
 
 
@@ -1305,6 +1397,54 @@ class GameConfig:
             for phase in su.phases or []:
                 if phase not in ("base", "free_spins", "hold_win"):
                     errors.append(f"symbol_upgrade.phases 非法: {phase}")
+
+        jp = self.features.jackpot
+        if jp and jp.enabled:
+            if jp.mode not in JackpotConfig.MODES:
+                errors.append(f"jackpot.mode 非法: {jp.mode}")
+            if not jp.levels:
+                errors.append("jackpot.levels 不能为空")
+            names = [lv.name for lv in jp.levels]
+            if len(set(names)) != len(names):
+                errors.append("jackpot.levels 档位名不能重复")
+            for lv in jp.levels:
+                if not lv.name:
+                    errors.append("jackpot.levels 缺少档位名")
+                if float(lv.weight) <= 0:
+                    errors.append(f"jackpot 档位权重必须为正: {lv.name}")
+                if float(lv.amount) <= 0:
+                    errors.append(f"jackpot 档位金额必须为正: {lv.name}")
+                if float(lv.contribution_share) <= 0:
+                    errors.append(f"jackpot 档位贡献分摊必须为正: {lv.name}")
+                if float(lv.seed) < 0:
+                    errors.append(f"jackpot 档位种子不能为负: {lv.name}")
+            if not (0 < float(jp.hit_chance) <= 1):
+                errors.append(f"jackpot.hit_chance 必须落在 (0,1]: {jp.hit_chance}")
+            if not (0 <= float(jp.contribution_rate) <= 0.5):
+                errors.append(f"jackpot.contribution_rate 超出合理区间: {jp.contribution_rate}")
+            if jp.mode == "progressive" and float(jp.contribution_rate) <= 0:
+                errors.append("jackpot 累积模式必须设置 contribution_rate > 0（否则池不会增长）")
+            if jp.mode == "fixed" and float(jp.contribution_rate) > 0:
+                errors.append("jackpot 固定奖池模式不接受 contribution_rate（不累积）")
+            if float(jp.cap) < 0:
+                errors.append(f"jackpot.cap 不能为负: {jp.cap}")
+            # 奖池是 RTP 的一部分：先给一条粗预算，避免配置出「奖池吃掉全部返还」
+            if jp.mode == "fixed":
+                total_w = sum(float(lv.weight) for lv in jp.levels) or 1.0
+                avg = sum(float(lv.amount) * float(lv.weight) for lv in jp.levels) / total_w
+                budget = float(jp.hit_chance) * avg
+                if budget > 0.5:
+                    errors.append(
+                        f"jackpot 固定奖池的期望返还过高（{budget:.3f}），"
+                        f"请下调 hit_chance 或档位金额"
+                    )
+            elif float(jp.contribution_rate) > 0.2:
+                errors.append(
+                    f"jackpot 累积贡献率过高（{jp.contribution_rate:.3f}），请下调 contribution_rate"
+                )
+            for phase in jp.phases or []:
+                if phase not in ("base", "free_spins", "hold_win"):
+                    errors.append(f"jackpot.phases 非法: {phase}")
 
         ew = self.features.expanding_wild
         if ew:

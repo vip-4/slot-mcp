@@ -62,10 +62,33 @@
     buildGrid();
     renderPaytable();
     el('feature-badge').textContent = '基础旋转';
+    renderJackpotPools();
     el('win-line').textContent = `${cfg.name}：${cfg.reels}×${cfg.rows}，${payModeText(cfg)}。`;
     el('gamble-panel').hidden = true;
     if (el('play-game-name')) el('play-game-name').textContent = cfg.name;
     updateHud();
+  }
+
+  /** 奖池看板：把四档当前累积额渲染成一行；未启用奖池时整块隐藏。 */
+  function renderJackpotPools() {
+    const box = el('jackpot-pools');
+    if (!box) return;
+    const jp = cfg && cfg.features ? cfg.features.jackpot : null;
+    const pools = (state && state.jackpotPools) || (machine && machine.jackpotPools) || {};
+    if (!jp || !jp.enabled || !Object.keys(pools).length) {
+      box.hidden = true;
+      box.textContent = '';
+      return;
+    }
+    box.hidden = false;
+    const bet = Number(document.getElementById('bet-select').value || 1);
+    box.innerHTML = (jp.levels || [])
+      .map((lv) => {
+        const v = Number(pools[lv.name] || 0);
+        const mult = bet > 0 ? v / bet : v;
+        return `<span>${lv.name} <strong>${mult.toFixed(1)}x</strong></span>`;
+      })
+      .join('');
   }
 
   function payModeText(c) {
@@ -254,6 +277,7 @@
 
     const result = machine.spin({ totalBet: bet, state: state });
     state = result.state;
+    renderJackpotPools();
     await playSteps(result);
 
     credits += result.totalWin;
@@ -350,6 +374,8 @@
         } else if (e.type === 'mystery_reveal') {
           const mr = cfg.symbols[e.symbol] || { name: e.symbol };
           say(`凤凰蛋孵化：${e.count} 枚揭示为${mr.name}`);
+        } else if (e.type === 'jackpot') {
+          say(`奖池开奖：${e.level} 命中，+${Number(e.amount).toFixed(1)}`);
         }
       });
       if (!reduceMotion) await sleep(step.phase === 'hold_win' ? 620 : i === 0 ? 420 : 340);

@@ -40,7 +40,7 @@ SRC_DIR = ROOT / "web_static"
 DEFAULT_SITE_URL = "https://vip882.gitee.io/slot-games"
 
 SITE_NAME = "Blender SLOT 游戏合集"
-SITE_TAGLINE = "12 款免费在线老虎机 · 纯静态 · 无需下载"
+SITE_TAGLINE = "13 款免费在线老虎机 · 纯静态 · 无需下载"
 ORG_NAME = "Blender Slot MCP"
 BUILD_DATE = date.today().isoformat()
 
@@ -58,6 +58,7 @@ MEASURED_RTP = {
     "frost_wolf": 0.9644,
     "neon_twins": 0.9632,
     "jungle_evolve": 0.9624,
+    "gold_vein": 0.9650,
 }
 
 VOL_CN = {"low": "低", "medium": "中", "medium-high": "中高", "high": "高"}
@@ -77,6 +78,7 @@ FEATURE_CN = {
     "walking_wild": "行走 Wild",
     "sync_reels": "同步轴（Twin Reels）",
     "symbol_upgrade": "符号升级（进化链）",
+    "jackpot": "奖池（Mini/Minor/Major/Grand）",
 }
 
 GAME_COPY = {
@@ -148,16 +150,22 @@ GAME_COPY = {
         "免费条带里高档符号更密。",
         "best_for": "喜欢级联 + 进化链滚雪球、追求连续爆发的玩家",
     },
+    "gold_vein": {
+        "summary": "黄金矿脉采用 5×3 网格与 20 条赔付线。每注抽取 2% 注入 Mini / Minor / Major / Grand "
+        "四档累积奖池，命中即派发该档当前累积额（大奖池被抽中的那一下可以一次给出数百倍），"
+        "随后该档重置为种子值重新累积；矿洞 Scatter 触发 8/12/16 次免费旋转，倍率 [1,2,3] 递增。",
+        "best_for": "喜欢累积奖池（Progressive Jackpot）、愿意用小命中率换大额爆发的玩家",
+    },
 }
 
 FAQ = [
     {
         "q": "这些老虎机游戏是完全免费的吗？",
-        "a": "是的。6 款机台全部免费、无需注册、无需下载，打开网页即可游玩，游戏内使用的是虚拟积分，不涉及任何真实货币。",
+        "a": "是的。13 款机台全部免费、无需注册、无需下载，打开网页即可游玩，游戏内使用的是虚拟积分，不涉及任何真实货币。",
     },
     {
         "q": "RTP（返还率）是多少？",
-        "a": "六款机台的目标 RTP 均为 96%。以每机台 20 万局蒙特卡洛仿真实测，实际 RTP 落在 95.40% 至 97.20% 之间，"
+        "a": "13 款机台的目标 RTP 均为 96%。以每机台 20 万局蒙特卡洛仿真实测，实际 RTP 落在 95.40% 至 97.20% 之间，"
         "具体数值见本页「机台参数对比」表。",
     },
     {
@@ -207,7 +215,7 @@ TERMS = [
 ]
 
 HOW_TO = [
-    "在「机台」下拉框中选择一款主题（共 12 款）。",
+    "在「机台」下拉框中选择一款主题（共 13 款）。",
     "在「每局总注」中选择投注额度，范围 0.20 至 100.00 积分。",
     "点击「旋转」或按空格键开始一局；点击「自动 10 次」可连续游玩。",
     "中奖符号会高亮，级联 / 重转 / 免费旋转 / Hold & Win 会按步骤依次播放。",
@@ -451,6 +459,7 @@ def cabinet_html(games: List[Dict[str, Any]], current_id: str) -> str:
       </p>
     </div>
     <div id="reels" class="reels" aria-label="转轮网格" role="group"></div>
+    <p id="jackpot-pools" class="jackpot-pools" role="status" hidden></p>
     <p id="win-line" class="win-line" aria-live="polite">正在加载机台配置…</p>
     <div class="controls">
       <label for="bet-select">每局总注</label>
@@ -909,16 +918,16 @@ def write_text(path: Path, content: str) -> None:
 
 # --------------------------------------------------------------------------- 主流程
 SITE_DESCRIPTION = (
-    "11 款免费在线老虎机（幸运水果、糖果狂欢、龙宫探宝、法老之墓、星际远征、锦鲤纳福、"
-    "雷霆神殿、巨神遗迹、凤凰涅槃、冰原狼踪、霓虹双子、丛林进化）共用一套 CONFIG 引擎："
+    "13 款免费在线老虎机（幸运水果、糖果狂欢、龙宫探宝、法老之墓、星际远征、锦鲤纳福、"
+    "雷霆神殿、巨神遗迹、凤凰涅槃、冰原狼踪、霓虹双子、丛林进化、黄金矿脉）共用一套 CONFIG 引擎："
     "固定线与 243/4096 Ways 两种赔付体系，含免费旋转、Hold & Win、级联连击、扩展 Wild、"
     "随机 Wild 投放、Cash Collect 金币收集、倍率 Wild、Pick'em 选宝、巨符号、神秘符号揭示、"
-    "行走 Wild、同步轴、符号升级与红黑翻倍。"
+    "行走 Wild、同步轴、符号升级、累积奖池与红黑翻倍。"
     "纯静态网页，免下载免注册，移动端可玩。"
 )
 SITE_KEYWORDS = (
     "在线老虎机,免费老虎机,SLOT,老虎机游戏,水果机,免费旋转,Hold and Win,级联,Cash Collect,"
-    "Walking Wild,Mystery Symbol,老虎机模拟器,RTP,静态网页游戏,开源老虎机,Blender MCP"
+    "Walking Wild,Mystery Symbol,Progressive Jackpot,老虎机模拟器,RTP,静态网页游戏,开源老虎机,Blender MCP"
 )
 
 

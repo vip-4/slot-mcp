@@ -135,6 +135,31 @@
       }
     },
     {
+      "game": "gold_vein",
+      "alt": "黄金矿脉机台主题图：金块与矿洞",
+      "provider": "pexels",
+      "page_url": "https://www.pexels.com/photo/gold-and-silver-round-coins-and-bullions-8442328/",
+      "author": "Zlaťáky.cz",
+      "author_url": "https://www.pexels.com/@zlataky-cz-61823415",
+      "license": "Pexels License（可免费商用，无需署名但建议署名）",
+      "files": {
+        "hero": {
+          "path": "gold_vein-hero.jpg",
+          "width": 960,
+          "height": 540,
+          "bytes": 107224,
+          "source": "https://images.pexels.com/photos/8442328/pexels-photo-8442328.jpeg?auto=compress&cs=tinysrgb&fit=crop&w=960&h=540"
+        },
+        "og": {
+          "path": "gold_vein-og.jpg",
+          "width": 1200,
+          "height": 630,
+          "bytes": 144707,
+          "source": "https://images.pexels.com/photos/8442328/pexels-photo-8442328.jpeg?auto=compress&cs=tinysrgb&fit=crop&w=1200&h=630"
+        }
+      }
+    },
+    {
       "game": "jungle_evolve",
       "alt": "丛林进化机台主题图：热带雨林与藤蔓",
       "provider": "pexels",

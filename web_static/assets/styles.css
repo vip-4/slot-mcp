@@ -164,6 +164,15 @@ p { margin: 0 0 0.9rem; }
 }
 
 .win-line { min-height: 1.6em; font-weight: 700; color: var(--accent); }
+.jackpot-pools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.75rem;
+  margin: 0.35rem 0 0;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+.jackpot-pools strong { color: var(--accent); }
 
 .controls { display: flex; align-items: center; gap: 0.7rem; flex-wrap: wrap; }
 .controls label { font-size: 0.9rem; color: var(--muted); }

@@ -95,6 +95,7 @@
         "free_spins",
         "gamble",
         "hold_win",
+        "jackpot",
         "multiplier_wild",
         "mystery",
         "pick_bonus",
@@ -191,6 +192,7 @@
         "free_spins",
         "gamble",
         "hold_win",
+        "jackpot",
         "multiplier_wild",
         "mystery",
         "pick_bonus",
@@ -278,6 +280,7 @@
         "free_spins",
         "gamble",
         "hold_win",
+        "jackpot",
         "multiplier_wild",
         "mystery",
         "pick_bonus",
@@ -402,6 +405,7 @@
         "free_spins",
         "gamble",
         "hold_win",
+        "jackpot",
         "multiplier_wild",
         "mystery",
         "pick_bonus",
@@ -498,6 +502,104 @@
         "free_spins",
         "gamble",
         "hold_win",
+        "jackpot",
+        "multiplier_wild",
+        "mystery",
+        "pick_bonus",
+        "random_wild",
+        "symbol_upgrade",
+        "sync_reels",
+        "walking_wild"
+      ]
+    },
+    {
+      "id": "gold_vein",
+      "name": "黄金矿脉",
+      "reels": 5,
+      "rows": 3,
+      "pay_mode": "lines",
+      "theme": {
+        "id": "mine",
+        "name": "黄金矿脉",
+        "palette": {
+          "grid": "#2b2010",
+          "reel": "#3a2a12",
+          "win": "#ffc300",
+          "wild": "#ffe9a8",
+          "bonus": "#c6a4ff"
+        },
+        "cabinet_color": "#3a2a12",
+        "background": "#150f06",
+        "accent": "#ffc300",
+        "music": ""
+      },
+      "symbols": [
+        {
+          "id": "rubble",
+          "name": "碎石",
+          "kind": "standard",
+          "color": "#8d8577",
+          "glyph": "🪨"
+        },
+        {
+          "id": "pick",
+          "name": "鹤嘴镐",
+          "kind": "standard",
+          "color": "#b0bec5",
+          "glyph": "⛏️"
+        },
+        {
+          "id": "cart",
+          "name": "矿车",
+          "kind": "standard",
+          "color": "#a1887f",
+          "glyph": "🛒"
+        },
+        {
+          "id": "lantern",
+          "name": "矿灯",
+          "kind": "standard",
+          "color": "#ffd166",
+          "glyph": "🔦"
+        },
+        {
+          "id": "gem",
+          "name": "宝石",
+          "kind": "standard",
+          "color": "#7ee8fa",
+          "glyph": "💎"
+        },
+        {
+          "id": "gold",
+          "name": "金块",
+          "kind": "standard",
+          "color": "#ffc300",
+          "glyph": "🪙"
+        },
+        {
+          "id": "wild",
+          "name": "矿脉 Wild",
+          "kind": "wild",
+          "color": "#ffe9a8",
+          "glyph": "🔶"
+        },
+        {
+          "id": "scatter",
+          "name": "矿洞 Scatter",
+          "kind": "scatter",
+          "color": "#c6a4ff",
+          "glyph": "🕳️"
+        }
+      ],
+      "features": [
+        "cascade",
+        "collect",
+        "colossal",
+        "expanding_wild",
+        "free_spins",
+        "gamble",
+        "hold_win",
+        "jackpot",
         "multiplier_wild",
         "mystery",
         "pick_bonus",
@@ -594,6 +696,7 @@
         "free_spins",
         "gamble",
         "hold_win",
+        "jackpot",
         "multiplier_wild",
         "mystery",
         "pick_bonus",
@@ -681,6 +784,7 @@
         "free_spins",
         "gamble",
         "hold_win",
+        "jackpot",
         "multiplier_wild",
         "mystery",
         "pick_bonus",
@@ -777,6 +881,7 @@
         "free_spins",
         "gamble",
         "hold_win",
+        "jackpot",
         "multiplier_wild",
         "mystery",
         "pick_bonus",
@@ -885,6 +990,7 @@
         "free_spins",
         "gamble",
         "hold_win",
+        "jackpot",
         "multiplier_wild",
         "mystery",
         "pick_bonus",
@@ -988,6 +1094,7 @@
         "free_spins",
         "gamble",
         "hold_win",
+        "jackpot",
         "multiplier_wild",
         "mystery",
         "pick_bonus",
@@ -1082,6 +1189,7 @@
         "free_spins",
         "gamble",
         "hold_win",
+        "jackpot",
         "multiplier_wild",
         "mystery",
         "pick_bonus",
@@ -1192,6 +1300,7 @@
         "free_spins",
         "gamble",
         "hold_win",
+        "jackpot",
         "multiplier_wild",
         "mystery",
         "pick_bonus",
